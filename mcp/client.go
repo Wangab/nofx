@@ -220,6 +220,9 @@ func (client *Client) buildMCPRequestBody(systemPrompt, userPrompt string) map[s
 	} else {
 		requestBody["max_tokens"] = client.MaxTokens
 	}
+	if client.Model == DeepSeekReasonerModel {
+		requestBody["stream"] = false
+	}
 	return requestBody
 }
 
