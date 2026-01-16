@@ -8,6 +8,7 @@ const (
 	ProviderDeepSeek       = "deepseek"
 	DefaultDeepSeekBaseURL = "https://api.deepseek.com"
 	DefaultDeepSeekModel   = "deepseek-chat"
+	DeepSeekReasonerModel  = "deepseek-reasoner"
 )
 
 type DeepSeekClient struct {
@@ -24,15 +25,16 @@ func NewDeepSeekClient() AIClient {
 // NewDeepSeekClientWithOptions creates DeepSeek client (supports options pattern)
 //
 // Usage examples:
-//   // Basic usage
-//   client := mcp.NewDeepSeekClientWithOptions()
 //
-//   // Custom configuration
-//   client := mcp.NewDeepSeekClientWithOptions(
-//       mcp.WithAPIKey("sk-xxx"),
-//       mcp.WithLogger(customLogger),
-//       mcp.WithTimeout(60*time.Second),
-//   )
+//	// Basic usage
+//	client := mcp.NewDeepSeekClientWithOptions()
+//
+//	// Custom configuration
+//	client := mcp.NewDeepSeekClientWithOptions(
+//	    mcp.WithAPIKey("sk-xxx"),
+//	    mcp.WithLogger(customLogger),
+//	    mcp.WithTimeout(60*time.Second),
+//	)
 func NewDeepSeekClientWithOptions(opts ...ClientOption) AIClient {
 	// 1. Create DeepSeek preset options
 	deepseekOpts := []ClientOption{
