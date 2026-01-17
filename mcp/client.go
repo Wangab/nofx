@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -17,7 +18,7 @@ const (
 )
 
 var (
-	DefaultTimeout = 120 * time.Second
+	DefaultTimeout = 180 * time.Second
 
 	MaxRetryTimes = 3
 
@@ -167,6 +168,7 @@ func (client *Client) CallWithMessages(systemPrompt, userPrompt string) (string,
 			if attempt > 1 {
 				client.logger.Infof("✓ AI API retry succeeded")
 			}
+			client.logger.Infof("✓ AI API replay --> %s", result)
 			return result, nil
 		}
 
@@ -221,7 +223,7 @@ func (client *Client) buildMCPRequestBody(systemPrompt, userPrompt string) map[s
 		requestBody["max_tokens"] = client.MaxTokens
 	}
 	if client.Model == DeepSeekReasonerModel {
-		requestBody["stream"] = false
+		requestBody["stream"] = true
 	}
 	return requestBody
 }
@@ -293,6 +295,85 @@ func (client *Client) buildRequest(url string, jsonData []byte) (*http.Request, 
 	return req, nil
 }
 
+type SSECallback func(chunk string, done bool, err error)
+
+// ParseSSEWithCallback 带回调的流式解析
+func ParseSSEWithCallback(resp *http.Response, callback SSECallback) error {
+	defer resp.Body.Close()
+
+	if callback == nil {
+		callback = func(chunk string, done bool, err error) {
+			if err != nil {
+				fmt.Printf("错误: %v\n", err)
+			} else if done {
+				fmt.Println("\n[SSE流结束]")
+			} else if chunk != "" {
+				fmt.Print(chunk)
+			}
+		}
+	}
+
+	scanner := bufio.NewScanner(resp.Body)
+	scanner.Buffer(make([]byte, 0, 64*1024), 10*1024*1024)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if strings.HasPrefix(line, "data: ") {
+			data := strings.TrimPrefix(line, "data: ")
+
+			if data == "[DONE]" {
+				callback("", true, nil)
+				return nil
+			}
+
+			content, err := extractContentFromSSE(data)
+			if err != nil {
+				callback("", false, err)
+				continue
+			}
+
+			if content != "" {
+				callback(content, false, nil)
+			}
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		callback("", false, fmt.Errorf("扫描错误: %w", err))
+		return err
+	}
+
+	return nil
+}
+
+// extractContentFromSSE 从SSE数据行提取内容
+func extractContentFromSSE(data string) (string, error) {
+	var msg struct {
+		Choices []struct {
+			Delta struct {
+				Content string `json:"content"`
+			} `json:"delta"`
+			FinishReason string `json:"finish_reason,omitempty"`
+		} `json:"choices"`
+	}
+
+	if err := json.Unmarshal([]byte(data), &msg); err != nil {
+		return "", fmt.Errorf("JSON解析失败: %w, 数据: %s", err, data)
+	}
+
+	// 检查是否有内容
+	if len(msg.Choices) > 0 {
+		// 如果有完成原因，可以记录日志
+		if msg.Choices[0].FinishReason != "" {
+			fmt.Printf("完成原因: %s\n", msg.Choices[0].FinishReason)
+		}
+		return msg.Choices[0].Delta.Content, nil
+	}
+
+	return "", nil
+}
+
 // call single AI API call (fixed flow, cannot be overridden)
 func (client *Client) call(systemPrompt, userPrompt string) (string, error) {
 	// Print current AI configuration
@@ -322,30 +403,90 @@ func (client *Client) call(systemPrompt, userPrompt string) (string, error) {
 	}
 
 	// Step 5: Send HTTP request (fixed logic)
+	if requestBody["stream"] == true {
+		req.Header.Add("Accept", "text/event-stream")
+		req.Header.Set("Cache-Control", "no-cache")
+	}
 	resp, err := client.httpClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("failed to send request: %w", err)
 	}
 	defer resp.Body.Close()
-
 	// Step 6: Read response body (fixed logic)
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("failed to read response: %w", err)
+	if requestBody["stream"] == true {
+		var finalAnswer strings.Builder
+		var reasoningContent strings.Builder
+		scanner := bufio.NewScanner(resp.Body)
+		scanner.Buffer(make([]byte, 0, 64*1024), 10*1024*1024)
+		for scanner.Scan() {
+			line := scanner.Text()
+			if strings.HasPrefix(line, "data: ") {
+				data := strings.TrimPrefix(line, "data: ")
+				if data == "[DONE]" {
+					break
+				}
+				// 解析数据结构
+				content, reasoning, err := parseAiData(data)
+				if err != nil {
+					continue
+				}
+				// 处理内容
+				if content != "" {
+					finalAnswer.WriteString(content)
+				}
+				// 处理推理过程（如果有）
+				if reasoning != "" {
+					// 可以选择性处理推理内容
+					reasoningContent.WriteString(reasoning)
+				}
+			}
+		}
+		if err := scanner.Err(); err != nil {
+			return finalAnswer.String(), fmt.Errorf("流读取错误: %w", err)
+		}
+		client.logger.Infof("📡 [MCP %s] reasoning : %s", client.String(), reasoningContent.String())
+		return finalAnswer.String(), nil
+	} else {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return "", fmt.Errorf("failed to read response: %w", err)
+		}
+		// Step 7: Check HTTP status code (fixed logic)
+		if resp.StatusCode != http.StatusOK {
+			return "", fmt.Errorf("API returned error (status %d): %s", resp.StatusCode, string(body))
+		}
+		// Step 8: Parse response (via hooks for dynamic dispatch)
+		result, err := client.hooks.parseMCPResponse(body)
+		if err != nil {
+			return "", fmt.Errorf("fail to parse AI server response: %w", err)
+		}
+		return result, nil
+	}
+}
+
+func parseAiData(data string) (content, reasoning string, err error) {
+	var msg struct {
+		Choices []struct {
+			Delta struct {
+				Content   string `json:"content"`
+				Role      string `json:"role,omitempty"`
+				Reasoning string `json:"reasoning_content,omitempty"`
+			} `json:"delta"`
+		} `json:"choices"`
+		// DeepSeek可能返回的其他字段
+		// Reasoning string `json:"reasoning_content,omitempty"`
 	}
 
-	// Step 7: Check HTTP status code (fixed logic)
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("API returned error (status %d): %s", resp.StatusCode, string(body))
+	if err := json.Unmarshal([]byte(data), &msg); err != nil {
+		return "", "", fmt.Errorf("解析JSON失败: %w", err)
 	}
 
-	// Step 8: Parse response (via hooks for dynamic dispatch)
-	result, err := client.hooks.parseMCPResponse(body)
-	if err != nil {
-		return "", fmt.Errorf("fail to parse AI server response: %w", err)
+	if len(msg.Choices) > 0 {
+		content = msg.Choices[0].Delta.Content
+		// 如果有其他字段，可以在这里提取
 	}
 
-	return result, nil
+	return content, msg.Choices[0].Delta.Reasoning, nil
 }
 
 func (client *Client) String() string {

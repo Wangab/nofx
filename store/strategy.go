@@ -287,7 +287,8 @@ func GetDefaultStrategyConfig(lang string) StrategyConfig {
 1. 检查持仓 → 是否止盈/止损
 2. 扫描候选币种 + 多时间框架 → 是否存在强信号
 3. 先写思维链，再输出结构化JSON
-4. 输出的字符数控制在2000个字符以内`,
+4. 输出时结构化JSON的时候，不要包含代码块的标记符号`,
+			//4. 输出的字符数控制在2000个字符以内
 		}
 	} else {
 		config.PromptSections = PromptSectionsConfig{
@@ -308,7 +309,8 @@ Only enter positions when multiple signals resonate. Freely use any effective an
 1. Check positions → whether to take profit/stop loss
 2. Scan candidate coins + multi-timeframe → whether strong signals exist
 3. Write chain of thought first, then output structured JSON
-4. The output character count is limited to within 2000 characters`,
+4. When outputting structured JSON, do not include code block markers`,
+			//4. The output character count is limited to within 2000 characters
 		}
 	}
 

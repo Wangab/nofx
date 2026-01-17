@@ -392,14 +392,7 @@ You are participating in a multi-AI market debate as %s %s.
 
 ### CRITICAL: Output Format (MUST follow exactly)
 
-First write your analysis:
-<reasoning>
-- Your market analysis for each coin with specific data references
-- Your main trading thesis and arguments
-- Response to other participants (if round > 1)
-</reasoning>
-
-Then output your decisions in STRICT JSON ARRAY format (can include multiple coins):
+First output your decisions in STRICT JSON ARRAY format (can include multiple coins) and When outputting structured JSON, do not include code block markers:
 <decision>
 [
   {"symbol": "BTCUSDT", "action": "open_long", "confidence": 75, "leverage": 5, "position_pct": 0.3, "stop_loss": 0.02, "take_profit": 0.04, "reasoning": "BTC showing strength"},
@@ -407,6 +400,13 @@ Then output your decisions in STRICT JSON ARRAY format (can include multiple coi
   {"symbol": "SOLUSDT", "action": "wait", "confidence": 60, "reasoning": "SOL needs more confirmation"}
 ]
 </decision>
+Then write your analysis:
+<reasoning>
+- Your market analysis for each coin with specific data references
+- Your main trading thesis and arguments
+- Response to other participants (if round > 1)
+- Analysis results must be presented as concisely as possible
+</reasoning>
 
 ### IMPORTANT: action field MUST be exactly one of:
 - "open_long" (做多/买入)
@@ -415,7 +415,6 @@ Then output your decisions in STRICT JSON ARRAY format (can include multiple coi
 - "close_short" (平空仓)
 - "hold" (持仓观望)
 - "wait" (空仓等待)
-
 ### Field Requirements for each coin:
 - symbol: REQUIRED, the trading pair
 - action: REQUIRED, exactly one of the above values
@@ -427,7 +426,6 @@ Then output your decisions in STRICT JSON ARRAY format (can include multiple coi
 - reasoning: REQUIRED, one sentence summary
 
 ---
-
 `, round, maxRounds, emoji, participant.Personality, personality)
 
 	return debateInstructions + basePrompt
@@ -620,10 +618,10 @@ func (e *DebateEngine) getParticipantVote(
 	// If no valid decisions, create a default one with session symbol
 	if primaryDecision == nil && session.Symbol != "" {
 		primaryDecision = &store.DebateDecision{
-			Action:     "hold",
-			Symbol:     session.Symbol,
-			Confidence: 50,
-			Leverage:   5,
+			Action:      "hold",
+			Symbol:      session.Symbol,
+			Confidence:  50,
+			Leverage:    5,
 			PositionPct: 0.2,
 		}
 		decisions = []*store.DebateDecision{primaryDecision}
@@ -1105,16 +1103,16 @@ func parseDecisions(response string) ([]*store.DebateDecision, int) {
 	if jsonContent != "" {
 		// Intermediate struct to handle both field naming conventions
 		type rawDecision struct {
-			Action       string  `json:"action"`
-			Symbol       string  `json:"symbol"`
-			Confidence   int     `json:"confidence"`
-			Leverage     int     `json:"leverage"`
-			PositionPct  float64 `json:"position_pct"`
-			StopLoss     float64 `json:"stop_loss"`
-			TakeProfit   float64 `json:"take_profit"`
-			StopLossPct  float64 `json:"stop_loss_pct"`  // Alternative field name
+			Action        string  `json:"action"`
+			Symbol        string  `json:"symbol"`
+			Confidence    int     `json:"confidence"`
+			Leverage      int     `json:"leverage"`
+			PositionPct   float64 `json:"position_pct"`
+			StopLoss      float64 `json:"stop_loss"`
+			TakeProfit    float64 `json:"take_profit"`
+			StopLossPct   float64 `json:"stop_loss_pct"`   // Alternative field name
 			TakeProfitPct float64 `json:"take_profit_pct"` // Alternative field name
-			Reasoning    string  `json:"reasoning"`
+			Reasoning     string  `json:"reasoning"`
 		}
 
 		convertRawDecision := func(r *rawDecision) *store.DebateDecision {
