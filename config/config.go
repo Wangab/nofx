@@ -44,6 +44,7 @@ type Config struct {
 	AlpacaAPIKey    string // Alpaca API key for US stocks
 	AlpacaSecretKey string // Alpaca secret key
 	TwelveDataKey   string // TwelveData API key for forex & metals
+	Variant         string
 }
 
 // Init initializes global configuration (from .env)
@@ -61,11 +62,15 @@ func Init() {
 		DBUser:    "postgres",
 		DBName:    "nofx",
 		DBSSLMode: "disable",
+		Variant:   "balanced", // balanced/scalping/conservative/aggressive
 	}
 
 	// Load from environment variables
 	if v := os.Getenv("JWT_SECRET"); v != "" {
 		cfg.JWTSecret = strings.TrimSpace(v)
+	}
+	if variant := os.Getenv("VARIANT"); variant != "" {
+		cfg.Variant = strings.TrimSpace(variant)
 	}
 	if cfg.JWTSecret == "" {
 		cfg.JWTSecret = "default-jwt-secret-change-in-production"

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"nofx/config"
 	"nofx/experience"
 	"nofx/kernel"
 	"nofx/logger"
@@ -90,6 +91,7 @@ type AutoTraderConfig struct {
 
 	// Strategy configuration (use complete strategy config)
 	StrategyConfig *store.StrategyConfig // Strategy configuration (includes coin sources, indicators, risk control, prompts, etc.)
+
 }
 
 // AutoTrader automatic trader
@@ -524,7 +526,8 @@ func (at *AutoTrader) runCycle() error {
 
 	// 5. Use strategy engine to call AI for decision
 	logger.Infof("🤖 Requesting AI analysis and decision... [Strategy Engine]")
-	aiDecision, err := kernel.GetFullDecisionWithStrategy(ctx, at.mcpClient, at.strategyEngine, "balanced")
+	variant := config.Get().Variant
+	aiDecision, err := kernel.GetFullDecisionWithStrategy(ctx, at.mcpClient, at.strategyEngine, variant)
 
 	if aiDecision != nil && aiDecision.AIRequestDurationMs > 0 {
 		record.AIRequestDurationMs = aiDecision.AIRequestDurationMs
@@ -593,11 +596,7 @@ func (at *AutoTrader) runCycle() error {
 	//           d.Leverage, d.PositionSizeUSD, d.StopLoss, d.TakeProfit)
 	//     }
 	// }
-	logger.Info()
 	logger.Info(strings.Repeat("-", 70))
-	// 8. Sort decisions: ensure close positions first, then open positions (prevent position stacking overflow)
-	logger.Info(strings.Repeat("-", 70))
-
 	// 8. Sort decisions: ensure close positions first, then open positions (prevent position stacking overflow)
 	sortedDecisions := sortDecisionsByPriority(aiDecision.Decisions)
 

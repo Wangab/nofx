@@ -168,7 +168,6 @@ func (client *Client) CallWithMessages(systemPrompt, userPrompt string) (string,
 			if attempt > 1 {
 				client.logger.Infof("✓ AI API retry succeeded")
 			}
-			client.logger.Infof("✓ AI API replay --> %s", result)
 			return result, nil
 		}
 

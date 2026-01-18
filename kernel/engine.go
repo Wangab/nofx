@@ -966,15 +966,15 @@ func (e *StrategyEngine) BuildSystemPrompt(accountEquity float64, variant string
 	sb.WriteString("Your chain of thought analysis...\n")
 	sb.WriteString("- Briefly analyze your thinking process \n")
 	sb.WriteString("</reasoning>\n\n")
-	sb.WriteString("<decision>\n")
 	sb.WriteString("Step 2: JSON decision array\n\n")
-	sb.WriteString("```json\n[\n")
+	sb.WriteString("<decision>\n")
+	sb.WriteString("\n[\n")
 	// Use the actual configured position value ratio for BTC/ETH in the example
 	examplePositionSize := accountEquity * btcEthPosValueRatio
 	sb.WriteString(fmt.Sprintf("  {\"symbol\": \"BTCUSDT\", \"action\": \"open_short\", \"leverage\": %d, \"position_size_usd\": %.0f, \"stop_loss\": 97000, \"take_profit\": 91000, \"confidence\": 85, \"risk_usd\": 300},\n",
 		riskControl.BTCETHMaxLeverage, examplePositionSize))
 	sb.WriteString("  {\"symbol\": \"ETHUSDT\", \"action\": \"close_long\"}\n")
-	sb.WriteString("]\n```\n")
+	sb.WriteString("]\n")
 	sb.WriteString("</decision>\n\n")
 	sb.WriteString("## Field Description\n\n")
 	sb.WriteString("- `action`: open_long | open_short | close_long | close_short | hold | wait\n")
