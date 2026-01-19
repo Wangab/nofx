@@ -60,8 +60,8 @@ func (t *FuturesTrader) SyncOrdersFromBinance(traderID string, exchangeID string
 	// This prevents race condition where trades happen between query and lastSyncTime update
 	syncStartTimeMs := nowMs
 
-	logger.Infof("🔄 Syncing Binance trades from: %s (UTC)",
-		time.UnixMilli(lastSyncTimeMs).UTC().Format("2006-01-02 15:04:05"))
+	logger.Infof("🔄 Syncing Binance trades from: %s (UTC) [ms: %d, now: %d]",
+		time.UnixMilli(lastSyncTimeMs).UTC().Format("2006-01-02 15:04:05"), lastSyncTimeMs, nowMs)
 
 	// Step 1: Get max trade IDs from local DB for incremental sync
 	maxTradeIDs, err := orderStore.GetMaxTradeIDsByExchange(exchangeID)
@@ -100,18 +100,17 @@ func (t *FuturesTrader) SyncOrdersFromBinance(traderID string, exchangeID string
 		symbolMap[s] = true
 	}
 
-	// Method 4: FALLBACK - Query REALIZED_PNL income to find symbols with closed trades
+	// Method 4: ALWAYS query REALIZED_PNL income to find symbols with closed trades
 	// This catches trades that COMMISSION missed (VIP users, BNB fee discount)
-	if len(symbolMap) == 0 {
-		logger.Infof("  🔍 No symbols found, trying REALIZED_PNL fallback...")
-		pnlSymbols, err := t.GetPnLSymbols(lastSyncTime)
-		if err != nil {
-			logger.Infof("  ⚠️ Failed to get PnL symbols: %v", err)
-		} else {
-			logger.Infof("  📋 REALIZED_PNL symbols found: %d - %v", len(pnlSymbols), pnlSymbols)
-			for _, s := range pnlSymbols {
-				symbolMap[s] = true
-			}
+	// IMPORTANT: Must run always, not just when symbolMap is empty,
+	// because a position might be fully closed (no active position) but have PnL
+	pnlSymbols, err := t.GetPnLSymbols(lastSyncTime)
+	if err != nil {
+		logger.Infof("  ⚠️ Failed to get PnL symbols: %v", err)
+	} else {
+		logger.Infof("  📋 REALIZED_PNL symbols found: %d - %v", len(pnlSymbols), pnlSymbols)
+		for _, s := range pnlSymbols {
+			symbolMap[s] = true
 		}
 	}
 
@@ -182,10 +181,12 @@ func (t *FuturesTrader) SyncOrdersFromBinance(traderID string, exchangeID string
 	posBuilder := store.NewPositionBuilder(positionStore)
 	syncedCount := 0
 
+	skippedCount := 0
 	for _, trade := range allTrades {
 		// Check if trade already exists
 		existing, err := orderStore.GetOrderByExchangeID(exchangeID, trade.TradeID)
 		if err == nil && existing != nil {
+			skippedCount++
 			continue // Trade already exists, skip
 		}
 
@@ -280,7 +281,7 @@ func (t *FuturesTrader) SyncOrdersFromBinance(traderID string, exchangeID string
 			trade.Time.UTC().Format("01-02 15:04:05"))
 	}
 
-	logger.Infof("✅ Binance order sync completed: %d new trades synced", syncedCount)
+	logger.Infof("✅ Binance order sync completed: %d new trades synced, %d skipped (already exist)", syncedCount, skippedCount)
 	return nil
 }
 
