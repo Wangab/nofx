@@ -242,7 +242,7 @@ func NewAutoTrader(config AutoTraderConfig, st *store.Store, userID string) (*Au
 		trader = NewBitgetTrader(config.BitgetAPIKey, config.BitgetSecretKey, config.BitgetPassphrase)
 	case "htx":
 		logger.Infof("🏦 [%s] Using HTX Futures trading", config.Name)
-		trader = NewHtxTrader(config.BitgetAPIKey, config.BitgetSecretKey, config.BitgetPassphrase)
+		trader = NewHtxTrader(config.BitgetAPIKey, config.BitgetSecretKey)
 	case "hyperliquid":
 		logger.Infof("🏦 [%s] Using Hyperliquid trading", config.Name)
 		trader, err = NewHyperliquidTrader(config.HyperliquidPrivateKey, config.HyperliquidWalletAddr, config.HyperliquidTestnet)

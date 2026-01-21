@@ -88,7 +88,7 @@ export const api = {
   async createTrader(request: CreateTraderRequest): Promise<TraderInfo> {
     const result = await httpClient.post<TraderInfo>(
       `${API_BASE}/traders`,
-      request
+      request,
     )
     if (!result.success) throw new Error('创建交易员失败')
     return result.data!
@@ -101,7 +101,7 @@ export const api = {
 
   async startTrader(traderId: string): Promise<void> {
     const result = await httpClient.post(
-      `${API_BASE}/traders/${traderId}/start`
+      `${API_BASE}/traders/${traderId}/start`,
     )
     if (!result.success) throw new Error('启动交易员失败')
   },
@@ -114,7 +114,7 @@ export const api = {
   async toggleCompetition(traderId: string, showInCompetition: boolean): Promise<void> {
     const result = await httpClient.put(
       `${API_BASE}/traders/${traderId}/competition`,
-      { show_in_competition: showInCompetition }
+      { show_in_competition: showInCompetition },
     )
     if (!result.success) throw new Error('更新竞技场显示设置失败')
   },
@@ -122,7 +122,7 @@ export const api = {
   async closePosition(traderId: string, symbol: string, side: string): Promise<{ message: string }> {
     const result = await httpClient.post<{ message: string }>(
       `${API_BASE}/traders/${traderId}/close-position`,
-      { symbol, side }
+      { symbol, side },
     )
     if (!result.success) throw new Error('平仓失败')
     return result.data!
@@ -130,18 +130,18 @@ export const api = {
 
   async updateTraderPrompt(
     traderId: string,
-    customPrompt: string
+    customPrompt: string,
   ): Promise<void> {
     const result = await httpClient.put(
       `${API_BASE}/traders/${traderId}/prompt`,
-      { custom_prompt: customPrompt }
+      { custom_prompt: customPrompt },
     )
     if (!result.success) throw new Error('更新自定义策略失败')
   },
 
   async getTraderConfig(traderId: string): Promise<TraderConfigData> {
     const result = await httpClient.get<TraderConfigData>(
-      `${API_BASE}/traders/${traderId}/config`
+      `${API_BASE}/traders/${traderId}/config`,
     )
     if (!result.success) throw new Error('获取交易员配置失败')
     return result.data!
@@ -149,11 +149,11 @@ export const api = {
 
   async updateTrader(
     traderId: string,
-    request: CreateTraderRequest
+    request: CreateTraderRequest,
   ): Promise<TraderInfo> {
     const result = await httpClient.put<TraderInfo>(
       `${API_BASE}/traders/${traderId}`,
-      request
+      request,
     )
     if (!result.success) throw new Error('更新交易员失败')
     return result.data!
@@ -169,7 +169,7 @@ export const api = {
   // 获取系统支持的AI模型列表（无需认证）
   async getSupportedModels(): Promise<AIModel[]> {
     const result = await httpClient.get<AIModel[]>(
-      `${API_BASE}/supported-models`
+      `${API_BASE}/supported-models`,
     )
     if (!result.success) throw new Error('获取支持的模型失败')
     return result.data!
@@ -210,7 +210,7 @@ export const api = {
     const encryptedPayload = await CryptoService.encryptSensitiveData(
       JSON.stringify(request),
       userId,
-      sessionId
+      sessionId,
     )
 
     // 发送加密数据
@@ -228,14 +228,14 @@ export const api = {
   // 获取系统支持的交易所列表（无需认证）
   async getSupportedExchanges(): Promise<Exchange[]> {
     const result = await httpClient.get<Exchange[]>(
-      `${API_BASE}/supported-exchanges`
+      `${API_BASE}/supported-exchanges`,
     )
     if (!result.success) throw new Error('获取支持的交易所失败')
     return result.data!
   },
 
   async updateExchangeConfigs(
-    request: UpdateExchangeConfigRequest
+    request: UpdateExchangeConfigRequest,
   ): Promise<void> {
     const result = await httpClient.put(`${API_BASE}/exchanges`, request)
     if (!result.success) throw new Error('更新交易所配置失败')
@@ -274,13 +274,13 @@ export const api = {
     const encryptedPayload = await CryptoService.encryptSensitiveData(
       JSON.stringify(request),
       userId,
-      sessionId
+      sessionId,
     )
 
     // 发送加密数据
     const result = await httpClient.post<{ id: string }>(
       `${API_BASE}/exchanges`,
-      encryptedPayload
+      encryptedPayload,
     )
     if (!result.success) throw new Error('创建交易所账户失败')
     return result.data!
@@ -294,7 +294,7 @@ export const api = {
 
   // 使用加密传输更新交易所配置（自动检测是否启用加密）
   async updateExchangeConfigsEncrypted(
-    request: UpdateExchangeConfigRequest
+    request: UpdateExchangeConfigRequest,
   ): Promise<void> {
     // 检查是否启用了传输加密
     const config = await CryptoService.fetchCryptoConfig()
@@ -320,13 +320,13 @@ export const api = {
     const encryptedPayload = await CryptoService.encryptSensitiveData(
       JSON.stringify(request),
       userId,
-      sessionId
+      sessionId,
     )
 
     // 发送加密数据
     const result = await httpClient.put(
       `${API_BASE}/exchanges`,
-      encryptedPayload
+      encryptedPayload,
     )
     if (!result.success) throw new Error('更新交易所配置失败')
   },
@@ -375,7 +375,7 @@ export const api = {
   // 获取最新决策（支持trader_id和limit参数）
   async getLatestDecisions(
     traderId?: string,
-    limit: number = 5
+    limit: number = 5,
   ): Promise<DecisionRecord[]> {
     const params = new URLSearchParams()
     if (traderId) {
@@ -384,7 +384,7 @@ export const api = {
     params.append('limit', limit.toString())
 
     const result = await httpClient.get<DecisionRecord[]>(
-      `${API_BASE}/decisions/latest?${params}`
+      `${API_BASE}/decisions/latest?${params}`,
     )
     if (!result.success) throw new Error('获取最新决策失败')
     return result.data!
@@ -416,7 +416,7 @@ export const api = {
   async getEquityHistoryBatch(traderIds: string[], hours?: number): Promise<any> {
     const result = await httpClient.post<any>(
       `${API_BASE}/equity-history-batch`,
-      { trader_ids: traderIds, hours: hours || 0 }
+      { trader_ids: traderIds, hours: hours || 0 },
     )
     if (!result.success) throw new Error('获取批量历史数据失败')
     return result.data!
@@ -432,7 +432,7 @@ export const api = {
   // 获取公开交易员配置（无需认证）
   async getPublicTraderConfig(traderId: string): Promise<any> {
     const result = await httpClient.get<any>(
-      `${API_BASE}/trader/${traderId}/config`
+      `${API_BASE}/trader/${traderId}/config`,
     )
     if (!result.success) throw new Error('获取公开交易员配置失败')
     return result.data!
@@ -441,7 +441,7 @@ export const api = {
   // 获取竞赛数据（无需认证）
   async getCompetition(): Promise<CompetitionData> {
     const result = await httpClient.get<CompetitionData>(
-      `${API_BASE}/competition`
+      `${API_BASE}/competition`,
     )
     if (!result.success) throw new Error('获取竞赛数据失败')
     return result.data!
@@ -476,7 +476,7 @@ export const api = {
       `${API_BASE}/backtest/runs${query.toString() ? `?${query}` : ''}`,
       {
         headers: getAuthHeaders(),
-      }
+      },
     )
     return handleJSONResponse<BacktestRunsResponse>(res)
   },
@@ -519,7 +519,7 @@ export const api = {
 
   async updateBacktestLabel(
     runId: string,
-    label: string
+    label: string,
   ): Promise<BacktestRunMetadata> {
     const res = await fetch(`${API_BASE}/backtest/label`, {
       method: 'POST',
@@ -550,7 +550,7 @@ export const api = {
   async getBacktestEquity(
     runId: string,
     timeframe?: string,
-    limit?: number
+    limit?: number,
   ): Promise<BacktestEquityPoint[]> {
     const query = new URLSearchParams({ run_id: runId })
     if (timeframe) query.set('tf', timeframe)
@@ -563,7 +563,7 @@ export const api = {
 
   async getBacktestTrades(
     runId: string,
-    limit = 200
+    limit = 200,
   ): Promise<BacktestTradeEvent[]> {
     const query = new URLSearchParams({
       run_id: runId,
@@ -585,7 +585,7 @@ export const api = {
   async getBacktestKlines(
     runId: string,
     symbol: string,
-    timeframe?: string
+    timeframe?: string,
   ): Promise<BacktestKlinesResponse> {
     const query = new URLSearchParams({ run_id: runId, symbol })
     if (timeframe) query.set('timeframe', timeframe)
@@ -597,7 +597,7 @@ export const api = {
 
   async getBacktestTrace(
     runId: string,
-    cycle?: number
+    cycle?: number,
   ): Promise<DecisionRecord> {
     const query = new URLSearchParams({ run_id: runId })
     if (cycle) query.set('cycle', String(cycle))
@@ -610,7 +610,7 @@ export const api = {
   async getBacktestDecisions(
     runId: string,
     limit = 20,
-    offset = 0
+    offset = 0,
   ): Promise<DecisionRecord[]> {
     const query = new URLSearchParams({
       run_id: runId,
@@ -632,7 +632,7 @@ export const api = {
       try {
         const data = text ? JSON.parse(text) : null
         throw new Error(
-          data?.error || data?.message || text || '导出失败，请稍后再试'
+          data?.error || data?.message || text || '导出失败，请稍后再试',
         )
       } catch (err) {
         if (err instanceof Error && err.message) {
@@ -686,7 +686,7 @@ export const api = {
       name?: string
       description?: string
       config?: StrategyConfig
-    }
+    },
   ): Promise<Strategy> {
     const result = await httpClient.put<Strategy>(`${API_BASE}/strategies/${strategyId}`, data)
     if (!result.success) throw new Error('更新策略失败')
@@ -742,7 +742,7 @@ export const api = {
   async executeDebate(debateId: string, traderId: string): Promise<DebateSessionWithDetails> {
     const result = await httpClient.post<{ message: string; session: DebateSessionWithDetails }>(
       `${API_BASE}/debates/${debateId}/execute`,
-      { trader_id: traderId }
+      { trader_id: traderId },
     )
     if (!result.success) throw new Error('执行交易失败')
     return result.data!.session
@@ -780,7 +780,7 @@ export const api = {
   // Position History API
   async getPositionHistory(traderId: string, limit: number = 100): Promise<PositionHistoryResponse> {
     const result = await httpClient.get<PositionHistoryResponse>(
-      `${API_BASE}/positions/history?trader_id=${traderId}&limit=${limit}`
+      `${API_BASE}/positions/history?trader_id=${traderId}&limit=${limit}`,
     )
     if (!result.success) throw new Error('获取历史仓位失败')
     return result.data!
