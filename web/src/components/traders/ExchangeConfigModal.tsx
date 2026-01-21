@@ -22,6 +22,7 @@ const SUPPORTED_EXCHANGE_TEMPLATES = [
   { exchange_type: 'bybit', name: 'Bybit Futures', type: 'cex' as const },
   { exchange_type: 'okx', name: 'OKX Futures', type: 'cex' as const },
   { exchange_type: 'bitget', name: 'Bitget Futures', type: 'cex' as const },
+  { exchange_type: 'htx', name: 'HTX', type: 'cex' as const },
   { exchange_type: 'hyperliquid', name: 'Hyperliquid', type: 'dex' as const },
   { exchange_type: 'aster', name: 'Aster DEX', type: 'dex' as const },
   { exchange_type: 'lighter', name: 'Lighter', type: 'dex' as const },
@@ -126,6 +127,7 @@ export function ExchangeConfigModal({
     okx: { url: 'https://www.okx.com/join/1865360', hasReferral: true },
     bybit: { url: 'https://partner.bybit.com/b/83856', hasReferral: true },
     bitget: { url: 'https://www.bitget.com/referral/register?from=referral&clacCode=c8a43172', hasReferral: true },
+    htx: { url: 'https://www.htx.com.am/invite/zh-cn/1h?invite_code=qtys6223', hasReferral: true },
     hyperliquid: { url: 'https://app.hyperliquid.xyz/join/AITRADING', hasReferral: true },
     aster: { url: 'https://www.asterdex.com/en/referral/fdfc0e', hasReferral: true },
     lighter: { url: 'https://app.lighter.xyz/?referral=68151432', hasReferral: true },
@@ -288,6 +290,9 @@ export function ExchangeConfigModal({
       } else if (currentExchangeType === 'bitget') {
         if (!apiKey.trim() || !secretKey.trim() || !passphrase.trim()) return
         await onSave(exchangeId, exchangeType, trimmedAccountName, apiKey.trim(), secretKey.trim(), passphrase.trim(), testnet)
+      } else if (currentExchangeType === 'htx') {
+        if (!apiKey.trim() || !secretKey.trim()) return
+        await onSave(exchangeId, exchangeType, trimmedAccountName, apiKey.trim(), secretKey.trim(), '', testnet)
       } else if (currentExchangeType === 'hyperliquid') {
         if (!apiKey.trim() || !hyperliquidWalletAddr.trim()) return // 验证私钥和钱包地址
         await onSave(
@@ -544,6 +549,7 @@ export function ExchangeConfigModal({
                 {(currentExchangeType === 'binance' ||
                   currentExchangeType === 'bybit' ||
                   currentExchangeType === 'okx' ||
+                  currentExchangeType === 'htx' ||
                   currentExchangeType === 'bitget') && (
                     <>
                       {/* 币安用户配置提示 (D1 方案) */}
@@ -1214,14 +1220,15 @@ export function ExchangeConfigModal({
                     !asterPrivateKey.trim())) ||
                 (currentExchangeType === 'lighter' &&
                   (!lighterWalletAddr.trim() || !lighterApiKeyPrivateKey.trim())) ||
-                (currentExchangeType === 'bybit' &&
-                  (!apiKey.trim() || !secretKey.trim())) ||
+                (currentExchangeType === 'bybit' && (!apiKey.trim() || !secretKey.trim())) ||
+                (currentExchangeType === 'htx' && (!apiKey.trim() || !secretKey.trim())) ||
                 (selectedTemplate?.type === 'cex' &&
                   currentExchangeType !== 'hyperliquid' &&
                   currentExchangeType !== 'aster' &&
                   currentExchangeType !== 'lighter' &&
                   currentExchangeType !== 'binance' &&
                   currentExchangeType !== 'bybit' &&
+                  currentExchangeType !== 'htx' &&
                   currentExchangeType !== 'okx' &&
                   currentExchangeType !== 'bitget' &&
                   (!apiKey.trim() || !secretKey.trim()))

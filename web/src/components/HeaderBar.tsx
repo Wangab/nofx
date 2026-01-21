@@ -99,7 +99,7 @@ export default function HeaderBar({
             {(() => {
               // Define all navigation tabs
               const navTabs: { page: Page; path: string; label: string; requiresAuth: boolean }[] = [
-                { page: 'data', path: '/data', label: language === 'zh' ? '数据' : 'Data', requiresAuth: false },
+                // { page: 'data', path: '/data', label: language === 'zh' ? '数据' : 'Data', requiresAuth: false },
                 { page: 'strategy-market', path: '/strategy-market', label: language === 'zh' ? '策略市场' : 'Market', requiresAuth: true },
                 { page: 'traders', path: '/traders', label: t('configNav', language), requiresAuth: true },
                 { page: 'trader', path: '/dashboard', label: t('dashboardNav', language), requiresAuth: true },

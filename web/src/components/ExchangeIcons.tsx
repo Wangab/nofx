@@ -90,12 +90,14 @@ export const getExchangeIcon = (
         : lowerType.includes('bitget')
           ? 'bitget'
           : lowerType.includes('hyperliquid')
-            ? 'hyperliquid'
-            : lowerType.includes('aster')
-              ? 'aster'
-              : lowerType.includes('lighter')
-                ? 'lighter'
-                : lowerType
+            ? 'htx'
+            : lowerType.includes('htx')
+              ? 'hyperliquid'
+              : lowerType.includes('aster')
+                ? 'aster'
+                : lowerType.includes('lighter')
+                  ? 'lighter'
+                  : lowerType
 
   const iconProps = {
     width: props.width || 24,
