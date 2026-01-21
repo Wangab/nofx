@@ -12,6 +12,7 @@ const ICON_PATHS: Record<string, string> = {
   bybit: '/exchange-icons/bybit.png',
   okx: '/exchange-icons/okx.svg',
   bitget: '/exchange-icons/bitget.svg',
+  htx: '/exchange-icons/htx.png',
   hyperliquid: '/exchange-icons/hyperliquid.png',
   aster: '/exchange-icons/aster.svg',
   lighter: '/exchange-icons/lighter.png',
@@ -89,9 +90,9 @@ export const getExchangeIcon = (
         ? 'okx'
         : lowerType.includes('bitget')
           ? 'bitget'
-          : lowerType.includes('hyperliquid')
+          : lowerType.includes('htx')
             ? 'htx'
-            : lowerType.includes('htx')
+            : lowerType.includes('hyperliquid')
               ? 'hyperliquid'
               : lowerType.includes('aster')
                 ? 'aster'

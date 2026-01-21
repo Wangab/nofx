@@ -35,6 +35,10 @@ type AutoTraderConfig struct {
 	BybitAPIKey    string
 	BybitSecretKey string
 
+	// HTX API configuration
+	HtxAPIKey    string
+	HtxSecretKey string
+
 	// OKX API configuration
 	OKXAPIKey     string
 	OKXSecretKey  string
@@ -236,6 +240,9 @@ func NewAutoTrader(config AutoTraderConfig, st *store.Store, userID string) (*Au
 	case "bitget":
 		logger.Infof("🏦 [%s] Using Bitget Futures trading", config.Name)
 		trader = NewBitgetTrader(config.BitgetAPIKey, config.BitgetSecretKey, config.BitgetPassphrase)
+	case "htx":
+		logger.Infof("🏦 [%s] Using HTX Futures trading", config.Name)
+		trader = NewHtxTrader(config.BitgetAPIKey, config.BitgetSecretKey, config.BitgetPassphrase)
 	case "hyperliquid":
 		logger.Infof("🏦 [%s] Using Hyperliquid trading", config.Name)
 		trader, err = NewHyperliquidTrader(config.HyperliquidPrivateKey, config.HyperliquidWalletAddr, config.HyperliquidTestnet)
@@ -386,7 +393,13 @@ func (at *AutoTrader) Run() error {
 			logger.Infof("🔄 [%s] Bybit order+position sync enabled (every 30s)", at.name)
 		}
 	}
-
+	// Start HTX order sync if using Bybit exchange
+	if at.exchange == "htx" {
+		if htxTrader, ok := at.trader.(*HtxTrader); ok && at.store != nil {
+			htxTrader.StartOrderSync(at.id, at.exchangeID, at.exchange, at.store, 30*time.Second)
+			logger.Infof("🔄 [%s] HTX order+position sync enabled (every 30s)", at.name)
+		}
+	}
 	// Start OKX order sync if using OKX exchange
 	if at.exchange == "okx" {
 		if okxTrader, ok := at.trader.(*OKXTrader); ok && at.store != nil {
