@@ -1794,24 +1794,27 @@ func (at *AutoTrader) checkPositionDrawdown() {
 		if peakPnLPct > 0 && currentPnLPct < peakPnLPct {
 			drawdownPct = ((peakPnLPct - currentPnLPct) / peakPnLPct) * 100
 		}
-
 		// Check close position condition: profit > 5% and drawdown >= 40%
-		if currentPnLPct > 5.0 && drawdownPct >= 40.0 {
-			logger.Infof("🚨 Drawdown close position condition triggered: %s %s | Current profit: %.2f%% | Peak profit: %.2f%% | Drawdown: %.2f%%",
-				symbol, side, currentPnLPct, peakPnLPct, drawdownPct)
+		if config.Get().AutoClosePositon {
+			if currentPnLPct > 5.0 && drawdownPct >= 40.0 {
+				logger.Infof("🚨 Drawdown close position condition triggered: %s %s | Current profit: %.2f%% | Peak profit: %.2f%% | Drawdown: %.2f%%",
+					symbol, side, currentPnLPct, peakPnLPct, drawdownPct)
 
-			// Execute close position
-			if err := at.emergencyClosePosition(symbol, side); err != nil {
-				logger.Infof("❌ Drawdown close position failed (%s %s): %v", symbol, side, err)
-			} else {
-				logger.Infof("✅ Drawdown close position succeeded: %s %s", symbol, side)
-				// Clear cache for this position after closing
-				at.ClearPeakPnLCache(symbol, side)
+				// Execute close position
+				if err := at.emergencyClosePosition(symbol, side); err != nil {
+					logger.Infof("❌ Drawdown close position failed (%s %s): %v", symbol, side, err)
+				} else {
+					logger.Infof("✅ Drawdown close position succeeded: %s %s", symbol, side)
+					// Clear cache for this position after closing
+					at.ClearPeakPnLCache(symbol, side)
+				}
+			} else if currentPnLPct > 5.0 {
+				// Record situations close to close position condition (for debugging)
+				logger.Infof("📊 Drawdown monitoring: %s %s | Profit: %.2f%% | Peak: %.2f%% | Drawdown: %.2f%%",
+					symbol, side, currentPnLPct, peakPnLPct, drawdownPct)
 			}
-		} else if currentPnLPct > 5.0 {
-			// Record situations close to close position condition (for debugging)
-			logger.Infof("📊 Drawdown monitoring: %s %s | Profit: %.2f%% | Peak: %.2f%% | Drawdown: %.2f%%",
-				symbol, side, currentPnLPct, peakPnLPct, drawdownPct)
+		} else {
+			logger.Infof("📊 Position monitoring: %s %s | Profit: %.2f%% | Peak: %.2f%% | Drawdown: %.2f%%", symbol, side, currentPnLPct, peakPnLPct, drawdownPct)
 		}
 	}
 }

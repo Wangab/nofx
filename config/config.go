@@ -41,10 +41,11 @@ type Config struct {
 	ExperienceImprovement bool
 
 	// Market data provider API keys
-	AlpacaAPIKey    string // Alpaca API key for US stocks
-	AlpacaSecretKey string // Alpaca secret key
-	TwelveDataKey   string // TwelveData API key for forex & metals
-	Variant         string
+	AlpacaAPIKey     string // Alpaca API key for US stocks
+	AlpacaSecretKey  string // Alpaca secret key
+	TwelveDataKey    string // TwelveData API key for forex & metals
+	Variant          string // balanced/scalping/conservative/aggressive
+	AutoClosePositon bool   // enable/disable auto close position
 }
 
 // Init initializes global configuration (from .env)
@@ -55,14 +56,15 @@ func Init() {
 		MaxUsers:              10,   // Default: 10 users allowed
 		ExperienceImprovement: true, // Default: enabled to help improve the product
 		// Database defaults
-		DBType:    "sqlite",
-		DBPath:    "data/data.db",
-		DBHost:    "localhost",
-		DBPort:    5432,
-		DBUser:    "postgres",
-		DBName:    "nofx",
-		DBSSLMode: "disable",
-		Variant:   "balanced", // balanced/scalping/conservative/aggressive
+		DBType:           "sqlite",
+		DBPath:           "data/data.db",
+		DBHost:           "localhost",
+		DBPort:           5432,
+		DBUser:           "postgres",
+		DBName:           "nofx",
+		DBSSLMode:        "disable",
+		Variant:          "balanced",
+		AutoClosePositon: true,
 	}
 
 	// Load from environment variables
@@ -135,6 +137,9 @@ func Init() {
 	}
 	if v := os.Getenv("DB_SSLMODE"); v != "" {
 		cfg.DBSSLMode = v
+	}
+	if v := os.Getenv("AUTO_CLOSE_POSITON"); v != "" {
+		cfg.AutoClosePositon = strings.ToLower(v) != "false"
 	}
 
 	global = cfg
