@@ -11,8 +11,8 @@ import (
 
 // 必须是合约专用的 API Key（在 HTX 官网 API 管理 → 合约权限）
 const (
-	accessKey = "xx"
-	secretKey = "xx"
+	accessKey = "ba925fe2-ca7a210e-a6c9a3ff-dbye2sf5t7"
+	secretKey = "a8ded5d8-b02f4dab-f8aefcac-1084e"
 )
 
 func TestAccountBalance(t *testing.T) {
@@ -44,6 +44,23 @@ func TestPositions(t *testing.T) {
 	jsonErr := json.Unmarshal([]byte(getResp), &result)
 	if jsonErr != nil {
 		t.Logf("convert json error: %s", getResp)
+	}
+	t.Logf("getResp: %v", getResp)
+}
+
+func TestOrdersHistory(t *testing.T) {
+	// 初始化 AccountClient（linear swap USDT-M）
+	client := new(restful.AccountClient).Init(accessKey, secretKey, "")
+	// ulr
+	url := client.PUrlBuilder.Build(linearswap.GET_METHOD, "/v5/trade/order/details", nil)
+	getResp, getErr := reqbuilder.HttpGet(url)
+	if getErr != nil {
+		t.Logf("http get error: %s", getErr)
+	}
+	result := HtxTradeOrdersResponse{}
+	jsonErr := json.Unmarshal([]byte(getResp), &result)
+	if jsonErr != nil {
+		t.Logf("convert json error: %s", jsonErr)
 	}
 	t.Logf("getResp: %v", getResp)
 }
