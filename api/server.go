@@ -2155,7 +2155,7 @@ func (s *Server) handleAccount(c *gin.Context) {
 		return
 	}
 
-	logger.Infof("📊 Received account info request [%s]", trader.GetName())
+	logger.Infof("📊 Received account info request [%s] [%s]", trader.GetName(), trader.GetExchange())
 	account, err := trader.GetAccountInfo()
 	if err != nil {
 		SafeInternalError(c, "Get account info", err)

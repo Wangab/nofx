@@ -242,7 +242,7 @@ func NewAutoTrader(config AutoTraderConfig, st *store.Store, userID string) (*Au
 		trader = NewBitgetTrader(config.BitgetAPIKey, config.BitgetSecretKey, config.BitgetPassphrase)
 	case "htx":
 		logger.Infof("🏦 [%s] Using HTX Futures trading", config.Name)
-		trader = NewHtxTrader(config.BitgetAPIKey, config.BitgetSecretKey)
+		trader = NewHtxTrader(config.HtxAPIKey, config.HtxSecretKey)
 	case "hyperliquid":
 		logger.Infof("🏦 [%s] Using Hyperliquid trading", config.Name)
 		trader, err = NewHyperliquidTrader(config.HyperliquidPrivateKey, config.HyperliquidWalletAddr, config.HyperliquidTestnet)
@@ -405,6 +405,14 @@ func (at *AutoTrader) Run() error {
 		if okxTrader, ok := at.trader.(*OKXTrader); ok && at.store != nil {
 			okxTrader.StartOrderSync(at.id, at.exchangeID, at.exchange, at.store, 30*time.Second)
 			logger.Infof("🔄 [%s] OKX order+position sync enabled (every 30s)", at.name)
+		}
+	}
+
+	// Start HTX order sync if using Bitget exchange
+	if at.exchange == "htx" {
+		if htxTrader, ok := at.trader.(*HtxTrader); ok && at.store != nil {
+			htxTrader.StartOrderSync(at.id, at.exchangeID, at.exchange, at.store, 30*time.Second)
+			logger.Infof("🔄 [%s] HTX order+position sync enabled (every 30s)", at.name)
 		}
 	}
 
@@ -1935,7 +1943,7 @@ func (at *AutoTrader) recordAndConfirmOrder(orderResult map[string]interface{}, 
 	// Exchanges with OrderSync: Skip immediate order recording, let OrderSync handle it
 	// This ensures accurate data from GetTrades API and avoids duplicate records
 	switch at.exchange {
-	case "binance", "lighter", "hyperliquid", "bybit", "okx", "bitget", "aster":
+	case "binance", "lighter", "hyperliquid", "bybit", "okx", "bitget", "htx", "aster":
 		logger.Infof("  📝 Order submitted (id: %s), will be synced by OrderSync", orderID)
 		return
 	}

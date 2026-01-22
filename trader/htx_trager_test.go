@@ -19,7 +19,6 @@ func TestAccountBalance(t *testing.T) {
 	// 初始化 AccountClient（linear swap USDT-M）
 	client := new(restful.AccountClient).Init(accessKey, secretKey, "") // 第三个参数 host 留空默认 api.htx.com 或兼容
 	url := client.PUrlBuilder.Build(linearswap.GET_METHOD, "/v5/account/balance", nil)
-
 	getResp, getErr := reqbuilder.HttpGet(url)
 	if getErr != nil {
 		t.Logf("http get error: %s", getErr)
@@ -44,6 +43,7 @@ func TestPositions(t *testing.T) {
 	result := HtxTradePositionOpensResponse{}
 	jsonErr := json.Unmarshal([]byte(getResp), &result)
 	if jsonErr != nil {
-		t.Logf("convert json error: %s", jsonErr)
+		t.Logf("convert json error: %s", getResp)
 	}
+	t.Logf("getResp: %v", getResp)
 }
