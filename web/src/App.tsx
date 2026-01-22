@@ -22,6 +22,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ConfirmDialogProvider } from './components/ConfirmDialog'
 import { t } from './i18n/translations'
 import { useSystemConfig } from './hooks/useSystemConfig'
+import Sponsorship from './pages/Sponsorship'
 
 import { OFFICIAL_LINKS } from './constants/branding'
 import { BacktestPage } from './components/BacktestPage'
@@ -45,6 +46,7 @@ type Page =
   | 'data'
   | 'debate'
   | 'faq'
+  | 'sponsorship'
   | 'login'
   | 'register'
 
@@ -72,6 +74,7 @@ function App() {
     if (path === '/strategy-market' || hash === 'strategy-market') return 'strategy-market'
     if (path === '/data' || hash === 'data') return 'data'
     if (path === '/debate' || hash === 'debate') return 'debate'
+    if (path === '/sponsorship' || hash === 'sponsorship') return 'sponsorship'
     if (path === '/dashboard' || hash === 'trader' || hash === 'details')
       return 'trader'
     return 'competition' // 默认为竞赛页面
@@ -98,6 +101,7 @@ function App() {
       'strategy': '/strategy',
       'debate': '/debate',
       'faq': '/faq',
+      'sponsorship': '/sponsorship',
       'login': '/login',
       'register': '/register',
     }
@@ -478,6 +482,8 @@ function App() {
               <StrategyStudioPage />
             ) : currentPage === 'debate' ? (
               <DebateArenaPage />
+            ) : currentPage === 'sponsorship' ? (
+              <Sponsorship language={language} />
             ) : (
               <TraderDashboardPage
                 selectedTrader={selectedTrader}

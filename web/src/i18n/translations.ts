@@ -9,7 +9,6 @@ export const translations = {
     details: 'Details',
     tradingPanel: 'Trading Panel',
     competition: 'Competition',
-    backtest: 'Backtest',
     running: 'RUNNING',
     stopped: 'STOPPED',
     adminMode: 'Admin Mode',
@@ -23,7 +22,9 @@ export const translations = {
     dashboardNav: 'Dashboard',
     strategyNav: 'Strategy',
     debateNav: 'Arena',
+    backtest: 'Backtest',
     faqNav: 'FAQ',
+    sponsorship: 'Sponsorship',
 
     // Footer
     footerTitle: 'NOFX - AI Trading System',
@@ -95,6 +96,9 @@ export const translations = {
     popularSymbols: 'Popular Symbols',
     fullscreen: 'Fullscreen',
     exitFullscreen: 'Exit Fullscreen',
+
+    sponsorshipTitle: 'Support & Sponsorship',
+    sponsorshipDesc: 'If you appreciate my work and would like to support its ongoing development, please consider sponsoring me through the following methods:',
 
     // Backtest Page
     backtestPage: {
@@ -1233,6 +1237,7 @@ export const translations = {
     strategyNav: '策略',
     debateNav: '竞技场',
     faqNav: '常见问题',
+    sponsorship: '贊助我',
 
     // Footer
     footerTitle: 'NOFX - AI交易系统',
@@ -1304,6 +1309,9 @@ export const translations = {
     popularSymbols: '热门币种',
     fullscreen: '全屏',
     exitFullscreen: '退出全屏',
+
+    sponsorshipTitle: '支持有你更精彩',
+    sponsorshipDesc: '如果你喜欢我的成果并希望支持其持续发展，请考虑通过以下方式赞助我：',
 
     // Backtest Page
     backtestPage: {

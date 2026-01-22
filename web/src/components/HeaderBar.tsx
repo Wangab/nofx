@@ -16,6 +16,7 @@ type Page =
   | 'data'
   | 'debate'
   | 'faq'
+  | 'sponsorship'
   | 'login'
   | 'register'
 
@@ -106,8 +107,9 @@ export default function HeaderBar({
                 { page: 'strategy', path: '/strategy', label: t('strategyNav', language), requiresAuth: true },
                 { page: 'competition', path: '/competition', label: t('realtimeNav', language), requiresAuth: true },
                 { page: 'debate', path: '/debate', label: t('debateNav', language), requiresAuth: true },
-                { page: 'backtest', path: '/backtest', label: 'Backtest', requiresAuth: true },
+                { page: 'backtest', path: '/backtest', label: t('backtest', language), requiresAuth: true },
                 { page: 'faq', path: '/faq', label: t('faqNav', language), requiresAuth: false },
+                { page: 'sponsorship', path: '/sponsorship', label: t('sponsorship', language), requiresAuth: true },
               ]
 
               const handleNavClick = (tab: typeof navTabs[0]) => {
@@ -338,6 +340,7 @@ export default function HeaderBar({
                     { page: 'debate', path: '/debate', label: t('debateNav', language), requiresAuth: true },
                     { page: 'backtest', path: '/backtest', label: 'Backtest', requiresAuth: true },
                     { page: 'faq', path: '/faq', label: t('faqNav', language), requiresAuth: false },
+                    { page: 'sponsorship', path: '/sponsorship', label: t('sponsorship', language), requiresAuth: true },
                   ]
 
                   const handleMobileNavClick = (tab: typeof navTabs[0]) => {
