@@ -149,11 +149,20 @@ func (t *LighterTraderV2) StartOrderSync(traderID string, exchangeID string, exc
 	ticker := time.NewTicker(interval)
 	go func() {
 		for range ticker.C {
-			if err := t.SyncOrdersFromLighter(traderID, exchangeID, exchangeType, st); err != nil {
-				// Only log non-404 errors to reduce log spam
-				if !strings.Contains(err.Error(), "status 404") {
-					logger.Infof("⚠️  Order sync failed: %v", err)
+			trader, err := st.Trader().GetByID(traderID)
+			if err != nil {
+				logger.Errorf("交易員[%s]檢查出錯 --> 跳過訂單同步 --> %v", traderID, err)
+				continue
+			}
+			if trader != nil && trader.IsRunning {
+				if err := t.SyncOrdersFromLighter(traderID, exchangeID, exchangeType, st); err != nil {
+					// Only log non-404 errors to reduce log spam
+					if !strings.Contains(err.Error(), "status 404") {
+						logger.Infof("⚠️  Order sync failed: %v", err)
+					}
 				}
+			} else {
+				logger.Warnf("交易員[%s]不存在或者已經停止交易 --> 暫停訂單同步", traderID)
 			}
 		}
 	}()

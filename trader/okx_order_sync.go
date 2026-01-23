@@ -276,8 +276,17 @@ func (t *OKXTrader) StartOrderSync(traderID string, exchangeID string, exchangeT
 	ticker := time.NewTicker(interval)
 	go func() {
 		for range ticker.C {
-			if err := t.SyncOrdersFromOKX(traderID, exchangeID, exchangeType, st); err != nil {
-				logger.Infof("⚠️  OKX order sync failed: %v", err)
+			trader, err := st.Trader().GetByID(traderID)
+			if err != nil {
+				logger.Errorf("交易員[%s]檢查出錯 --> 跳過訂單同步 --> %v", traderID, err)
+				continue
+			}
+			if trader != nil && trader.IsRunning {
+				if err := t.SyncOrdersFromOKX(traderID, exchangeID, exchangeType, st); err != nil {
+					logger.Infof("⚠️  OKX order sync failed: %v", err)
+				}
+			} else {
+				logger.Warnf("交易員[%s]不存在或者已經停止交易 --> 暫停訂單同步", traderID)
 			}
 		}
 	}()
