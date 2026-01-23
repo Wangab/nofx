@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/HuobiRDCenter/huobi_futures_Golang/config"
 	"github.com/HuobiRDCenter/huobi_futures_Golang/sdk/linearswap"
 	"github.com/HuobiRDCenter/huobi_futures_Golang/sdk/linearswap/restful"
 	"github.com/HuobiRDCenter/huobi_futures_Golang/sdk/reqbuilder"
@@ -61,6 +62,18 @@ func TestOrdersHistory(t *testing.T) {
 	jsonErr := json.Unmarshal([]byte(getResp), &result)
 	if jsonErr != nil {
 		t.Logf("convert json error: %s", jsonErr)
+	}
+	t.Logf("getResp: %v", getResp)
+}
+
+func TestCancelOrder(t *testing.T) {
+	client := new(restful.OrderClient).Init(accessKey, secretKey, config.Host)
+	// url
+	url := client.PUrlBuilder.Build(linearswap.POST_METHOD, "/v5/trade/cancel_all_orders", nil)
+
+	getResp, getErr := reqbuilder.HttpPost(url, "{\"contract_code\": \"BTC-USDT\"}")
+	if getErr != nil {
+		t.Logf("http get error: %s", getErr)
 	}
 	t.Logf("getResp: %v", getResp)
 }

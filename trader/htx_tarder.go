@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"nofx/logger"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -221,6 +222,10 @@ func (t *HtxTrader) GetPositions() ([]map[string]any, error) {
 
 // OpenLong Open long position
 func (t *HtxTrader) OpenLong(symbol string, quantity float64, leverage int) (map[string]interface{}, error) {
+	// First cancel all pending orders for this symbol (clean up old stop-loss and take-profit orders)
+	if err := t.CancelAllOrders(symbol); err != nil {
+		logger.Infof("  ⚠ Failed to cancel old pending orders (may not have any): %v", err)
+	}
 	return nil, nil
 }
 
@@ -276,6 +281,16 @@ func (t *HtxTrader) CancelTakeProfitOrders(symbol string) error {
 
 // CancelAllOrders Cancel all pending orders for this symbol
 func (t *HtxTrader) CancelAllOrders(symbol string) error {
+	// url
+	if !strings.Contains(symbol, "-") {
+		symbol = strings.ReplaceAll(strings.ToUpper(symbol), "USDT", "-USDT")
+	}
+	url := t.client.PUrlBuilder.Build(linearswap.POST_METHOD, "/v5/trade/cancel_all_orders", nil)
+	content := fmt.Sprintf("{\"contract_code\": \"%s\"}", symbol)
+	_, getErr := reqbuilder.HttpPost(url, content)
+	if getErr != nil {
+		return getErr
+	}
 	return nil
 }
 
