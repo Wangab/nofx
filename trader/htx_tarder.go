@@ -80,6 +80,27 @@ type HTXAccountBalanceResponse struct {
 
 	Ts int64 `json:"ts"`
 }
+type HTXOrderResponse struct {
+	Code int `json:"code"`
+	Data struct {
+		ClientOrderId string `json:"client_order_id"`
+		OrderId       string `json:"order_id"`
+	} `json:"data,omitempty"`
+	Message string `json:"message,omitempty"`
+	Ts      int64  `json:"ts"`
+}
+
+type HTXContractPriceResponse struct {
+	Status string `json:"status"`
+	Data   []struct {
+		Id            string `json:"id"`
+		Basis         string `json:"basis"`
+		BasisRate     string `json:"basis_rate"`
+		ContractPrice string `json:"contract_price"`
+		IndexPrice    string `json:"index_price"`
+	} `json:"data,omitempty"`
+	Ts int64 `json:"ts"`
+}
 
 type HtxTrader struct {
 	apiKey    string
@@ -95,6 +116,8 @@ type HtxTrader struct {
 	positionsCacheMutex sync.RWMutex
 	// Cache duration (15 seconds)
 	cacheDuration time.Duration
+	marginMode    string
+	leverRate     int
 }
 
 func NewHtxTrader(accessKey, secretKey string) *HtxTrader {
@@ -107,6 +130,12 @@ func NewHtxTrader(accessKey, secretKey string) *HtxTrader {
 	}
 	logger.Infof("🔵 [HTX] Trader initialized")
 	return trader
+}
+func (t *HtxTrader) coverSymbol(symbol string) string {
+	if !strings.Contains(symbol, "-") {
+		symbol = strings.ReplaceAll(strings.ToUpper(symbol), "USDT", "-USDT")
+	}
+	return symbol
 }
 
 // GetBalance Get account balance
@@ -226,51 +255,311 @@ func (t *HtxTrader) OpenLong(symbol string, quantity float64, leverage int) (map
 	if err := t.CancelAllOrders(symbol); err != nil {
 		logger.Infof("  ⚠ Failed to cancel old pending orders (may not have any): %v", err)
 	}
-	return nil, nil
+	if err := t.SetLeverage(symbol, leverage); err != nil {
+		logger.Infof("  ⚠ Failed to set lever: %v", err)
+	}
+	symbol = t.coverSymbol(symbol)
+	url := t.client.PUrlBuilder.Build(linearswap.POST_METHOD, "/v5/trade/order", nil)
+	marginMode := "cross"
+	if t.marginMode != "" {
+		marginMode = t.marginMode
+	}
+	data := map[string]any{
+		"contract_code": symbol,
+		"margin_mode":   marginMode,
+		"position_side": "long",
+		"side":          "buy",
+		"type":          "market",
+		"volume":        quantity,
+	}
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	resp, getErr := reqbuilder.HttpPost(url, string(jsonBytes))
+	if getErr != nil {
+		return nil, getErr
+	}
+	result := HTXOrderResponse{}
+	jsonErr := json.Unmarshal([]byte(resp), &result)
+	if jsonErr != nil {
+		return nil, fmt.Errorf("failed to open htx long order: %w", jsonErr)
+	}
+	if result.Code != 200 {
+		return nil, fmt.Errorf("failed to open htx long order: %s", result.Message)
+	}
+	return map[string]any{
+		"orderId": result.Data.OrderId,
+		"symbol":  symbol,
+		"status":  "FILLED",
+	}, nil
 }
 
 // OpenShort Open short position
 func (t *HtxTrader) OpenShort(symbol string, quantity float64, leverage int) (map[string]interface{}, error) {
-	return nil, nil
+	// First cancel all pending orders for this symbol (clean up old stop-loss and take-profit orders)
+	if err := t.CancelAllOrders(symbol); err != nil {
+		logger.Infof("  ⚠ Failed to cancel old pending orders (may not have any): %v", err)
+	}
+	if err := t.SetLeverage(symbol, leverage); err != nil {
+		logger.Infof("  ⚠ Failed to set lever: %v", err)
+	}
+	symbol = t.coverSymbol(symbol)
+	url := t.client.PUrlBuilder.Build(linearswap.POST_METHOD, "/v5/trade/order", nil)
+	marginMode := "cross"
+	if t.marginMode != "" {
+		marginMode = t.marginMode
+	}
+	data := map[string]any{
+		"contract_code": symbol,
+		"margin_mode":   marginMode,
+		"position_side": "short",
+		"side":          "sell",
+		"type":          "market",
+		"volume":        quantity,
+	}
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	resp, getErr := reqbuilder.HttpPost(url, string(jsonBytes))
+	if getErr != nil {
+		return nil, getErr
+	}
+	result := HTXOrderResponse{}
+	jsonErr := json.Unmarshal([]byte(resp), &result)
+	if jsonErr != nil {
+		return nil, fmt.Errorf("failed to open htx long order: %w", jsonErr)
+	}
+	if result.Code != 200 {
+		return nil, fmt.Errorf("failed to open htx long order: %s", result.Message)
+	}
+	return map[string]any{
+		"orderId": result.Data.OrderId,
+		"symbol":  symbol,
+		"status":  "FILLED",
+	}, nil
 }
 
 // CloseLong Close long position (quantity=0 means close all)
 func (t *HtxTrader) CloseLong(symbol string, quantity float64) (map[string]interface{}, error) {
-	return nil, nil
+	symbol = t.coverSymbol(symbol)
+	url := t.client.PUrlBuilder.Build(linearswap.POST_METHOD, "/v5/trade/order", nil)
+	marginMode := "cross"
+	if t.marginMode != "" {
+		marginMode = t.marginMode
+	}
+	data := map[string]any{
+		"contract_code": symbol,
+		"margin_mode":   marginMode,
+		"position_side": "long",
+		"side":          "sell",
+		"type":          "market",
+		"volume":        quantity,
+	}
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	resp, getErr := reqbuilder.HttpPost(url, string(jsonBytes))
+	if getErr != nil {
+		return nil, getErr
+	}
+	result := HTXOrderResponse{}
+	jsonErr := json.Unmarshal([]byte(resp), &result)
+	if jsonErr != nil {
+		return nil, fmt.Errorf("failed to open htx long order: %w", jsonErr)
+	}
+	if result.Code != 200 {
+		return nil, fmt.Errorf("failed to open htx long order: %s", result.Message)
+	}
+	return map[string]any{
+		"orderId": result.Data.OrderId,
+		"symbol":  symbol,
+		"status":  "FILLED",
+	}, nil
 }
 
 // CloseShort Close short position (quantity=0 means close all)
 func (t *HtxTrader) CloseShort(symbol string, quantity float64) (map[string]interface{}, error) {
-	return nil, nil
+	symbol = t.coverSymbol(symbol)
+	url := t.client.PUrlBuilder.Build(linearswap.POST_METHOD, "/v5/trade/order", nil)
+	marginMode := "cross"
+	if t.marginMode != "" {
+		marginMode = t.marginMode
+	}
+	data := map[string]any{
+		"contract_code": symbol,
+		"margin_mode":   marginMode,
+		"position_side": "short",
+		"side":          "buy",
+		"type":          "market",
+		"volume":        quantity,
+	}
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	resp, getErr := reqbuilder.HttpPost(url, string(jsonBytes))
+	if getErr != nil {
+		return nil, getErr
+	}
+	result := HTXOrderResponse{}
+	jsonErr := json.Unmarshal([]byte(resp), &result)
+	if jsonErr != nil {
+		return nil, fmt.Errorf("failed to open htx long order: %w", jsonErr)
+	}
+	if result.Code != 200 {
+		return nil, fmt.Errorf("failed to open htx long order: %s", result.Message)
+	}
+	return map[string]any{
+		"orderId": result.Data.OrderId,
+		"symbol":  symbol,
+		"status":  "FILLED",
+	}, nil
 }
 
 // SetLeverage Set leverage
 func (t *HtxTrader) SetLeverage(symbol string, leverage int) error {
+	symbol = t.coverSymbol(symbol)
+	url := t.client.PUrlBuilder.Build(linearswap.POST_METHOD, "/v5/position/lever", nil)
+	marginMode := "cross"
+	if t.marginMode != "" {
+		marginMode = t.marginMode
+	}
+	data := map[string]any{
+		"contract_code": symbol,
+		"margin_mode":   marginMode,
+		"lever_rate":    strconv.Itoa(leverage),
+	}
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	_, getErr := reqbuilder.HttpPost(url, string(jsonBytes))
+	if getErr != nil {
+		return getErr
+	}
 	return nil
 }
 
 // SetMarginMode Set position mode (true=cross margin, false=isolated margin)
 func (t *HtxTrader) SetMarginMode(symbol string, isCrossMargin bool) error {
+	symbol = t.coverSymbol(symbol)
+	if isCrossMargin {
+		t.marginMode = "cross"
+	} else {
+		t.marginMode = "isolated"
+	}
+	url := t.client.PUrlBuilder.Build(linearswap.POST_METHOD, "/v5/position/lever", nil)
+	lever := 5
+	if t.leverRate != 0 {
+		lever = t.leverRate
+	}
+	data := map[string]any{
+		"contract_code": symbol,
+		"margin_mode":   t.marginMode,
+		"lever_rate":    strconv.Itoa(lever),
+	}
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	_, getErr := reqbuilder.HttpPost(url, string(jsonBytes))
+	if getErr != nil {
+		return getErr
+	}
 	return nil
 }
 
 // GetMarketPrice Get market price
 func (t *HtxTrader) GetMarketPrice(symbol string) (float64, error) {
+	symbol = t.coverSymbol(symbol)
+	url := t.client.PUrlBuilder.Build(linearswap.GET_METHOD, "/index/market/history/linear_swap_basis", nil)
+	requestUrl := fmt.Sprintf("%s?contract_code=%s&period=1min&size=1", url, symbol)
+	resp, err := reqbuilder.HttpGet(requestUrl)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get htx positions: %w", err)
+	}
+	result := HTXContractPriceResponse{}
+	jsonErr := json.Unmarshal([]byte(resp), &result)
+	if jsonErr != nil {
+		return 0, fmt.Errorf("failed to open htx market price: %w", jsonErr)
+	}
+	if result.Status != "ok" {
+		return 0, fmt.Errorf("failed to open htx market price: %v", result)
+	}
+	if len(result.Data) > 0 {
+		price, _ := strconv.ParseFloat(result.Data[0].ContractPrice, 64)
+		return price, nil
+	}
 	return 0, nil
 }
 
 // SetStopLoss Set stop-loss order
 func (t *HtxTrader) SetStopLoss(symbol string, positionSide string, quantity, stopPrice float64) error {
+	symbol = t.coverSymbol(symbol)
+	url := t.client.PUrlBuilder.Build(linearswap.POST_METHOD, "/linear-swap-api/v1/swap_cross_tpsl_order", nil)
+	if t.marginMode == "isolated" {
+		url = t.client.PUrlBuilder.Build(linearswap.POST_METHOD, "/linear-swap-api/v1/swap_tpsl_order", nil)
+	}
+	direction := "buy"
+	if positionSide == "LONG" {
+		direction = "sell"
+	}
+	data := map[string]any{
+		"contract_code":    symbol,
+		"direction":        direction,
+		"volume":           quantity,
+		"sl_trigger_price": stopPrice,
+	}
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	_, getErr := reqbuilder.HttpPost(url, string(jsonBytes))
+	if getErr != nil {
+		return getErr
+	}
 	return nil
 }
 
 // SetTakeProfit Set take-profit order
 func (t *HtxTrader) SetTakeProfit(symbol string, positionSide string, quantity, takeProfitPrice float64) error {
+	symbol = t.coverSymbol(symbol)
+	url := t.client.PUrlBuilder.Build(linearswap.POST_METHOD, "/linear-swap-api/v1/swap_cross_tpsl_order", nil)
+	if t.marginMode == "isolated" {
+		url = t.client.PUrlBuilder.Build(linearswap.POST_METHOD, "/linear-swap-api/v1/swap_tpsl_order", nil)
+	}
+	direction := "buy"
+	if positionSide == "LONG" {
+		direction = "sell"
+	}
+	data := map[string]any{
+		"contract_code":    symbol,
+		"direction":        direction,
+		"volume":           quantity,
+		"tp_trigger_price": takeProfitPrice,
+	}
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	_, getErr := reqbuilder.HttpPost(url, string(jsonBytes))
+	if getErr != nil {
+		return getErr
+	}
+	return nil
+}
+
+func (t *HtxTrader) GetStopLossOrders(symbol string) error {
+	symbol = t.coverSymbol(symbol)
 	return nil
 }
 
 // CancelStopLossOrders Cancel only stop-loss orders (BUG fix: don't delete take-profit when adjusting stop-loss)
 func (t *HtxTrader) CancelStopLossOrders(symbol string) error {
+
 	return nil
 }
 
@@ -281,13 +570,17 @@ func (t *HtxTrader) CancelTakeProfitOrders(symbol string) error {
 
 // CancelAllOrders Cancel all pending orders for this symbol
 func (t *HtxTrader) CancelAllOrders(symbol string) error {
+	symbol = t.coverSymbol(symbol)
 	// url
-	if !strings.Contains(symbol, "-") {
-		symbol = strings.ReplaceAll(strings.ToUpper(symbol), "USDT", "-USDT")
-	}
 	url := t.client.PUrlBuilder.Build(linearswap.POST_METHOD, "/v5/trade/cancel_all_orders", nil)
-	content := fmt.Sprintf("{\"contract_code\": \"%s\"}", symbol)
-	_, getErr := reqbuilder.HttpPost(url, content)
+	data := map[string]any{
+		"contract_code": symbol,
+	}
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	_, getErr := reqbuilder.HttpPost(url, string(jsonBytes))
 	if getErr != nil {
 		return getErr
 	}
@@ -301,7 +594,7 @@ func (t *HtxTrader) CancelStopOrders(symbol string) error {
 
 // FormatQuantity Format quantity to correct precision
 func (t *HtxTrader) FormatQuantity(symbol string, quantity float64) (string, error) {
-	return "", nil
+	return strconv.FormatFloat(quantity, 'f', -1, 64), nil
 }
 
 // GetOrderStatus Get order status
@@ -315,11 +608,160 @@ func (t *HtxTrader) GetOrderStatus(symbol string, orderID string) (map[string]in
 // limit: max number of records to return
 // Returns accurate exit price, fees, and close reason for positions closed externally
 func (t *HtxTrader) GetClosedPnL(startTime time.Time, limit int) ([]ClosedPnLRecord, error) {
-	return nil, nil
+	apiPath := fmt.Sprintf("/v5/trade/order/details?start_time=%d&limit=%d", startTime.UnixMilli(), limit)
+	url := t.client.PUrlBuilder.Build(linearswap.GET_METHOD, apiPath, nil)
+	resp, getErr := reqbuilder.HttpGet(url)
+	if getErr != nil {
+		return nil, getErr
+	}
+	var data struct {
+		List []struct {
+			Id             string  `json:"id"`
+			ContractCode   string  `json:"contract_code"`
+			OrderId        string  `json:"order_id"`
+			TradeId        string  `json:"trade_id"`
+			Side           string  `json:"side"`
+			PositionSide   string  `json:"position_side"`
+			OderType       string  `json:"order_type"`
+			MarginMode     string  `json:"margin_mode"`
+			Type           string  `json:"type"`
+			Role           string  `json:"role"`
+			TradePrice     string  `json:"trade_price"`
+			TradeVolume    string  `json:"trade_volume"`
+			TradeTurnover  string  `json:"trade_turnover"`
+			CreateTime     float64 `json:"created_time"`
+			UpdateTime     float64 `json:"updated_time"`
+			OrderSource    string  `json:"order_source"`
+			FeeCurrency    string  `json:"fee_currency"`
+			TradeFee       string  `json:"trade_fee"`
+			DeductionPrice string  `json:"deduction_price"`
+			Profit         string  `json:"profit"`
+			ContractType   string  `json:"contract_type"`
+		} `json:"data"`
+	}
+	err := json.Unmarshal([]byte(resp), &data)
+	if err != nil {
+		return nil, err
+	}
+	records := make([]ClosedPnLRecord, 0, len(data.List))
+	for _, pos := range data.List {
+		historyApiPath := "/v5/trade/order/history?contract_code=" + pos.ContractCode + "&margin_mode=" + pos.MarginMode
+		historyUrl := t.client.PUrlBuilder.Build(linearswap.GET_METHOD, historyApiPath, nil)
+		historyResp, e := reqbuilder.HttpGet(historyUrl)
+		if e != nil {
+			return nil, e
+		}
+		var historyData struct {
+			List []struct {
+				Id                 string `json:"id"`
+				ContractCode       string `json:"contract_code"`
+				Side               string `json:"side"`
+				PositionSide       string `json:"position_side"`
+				PriceMatch         string `json:"price_match"`
+				OrderId            string `json:"order_id"`
+				ClientOrderId      string `json:"client_order_id"`
+				MarginMode         string `json:"margin_mode"`
+				Price              string `json:"price"`
+				Volume             string `json:"volume"`
+				LeverRate          int64  `json:"lever_rate"`
+				State              string `json:"state"`
+				OrderSource        string `json:"order_source"`
+				ReduceOnly         bool   `json:"reduce_only"`
+				TimeInForce        string `json:"time_in_force"`
+				TpTriggerPrice     string `json:"tp_trigger_price"`
+				TpOrderPrice       string `json:"tp_order_price"`
+				TpType             string `json:"tp_type"`
+				TpTriggerPriceType string `json:"tp_trigger_price_type"`
+				SlTriggerPrice     string `json:"sl_trigger_price"`
+				SlOrderPrice       string `json:"sl_order_price"`
+				SlType             string `json:"sl_type"`
+				SlTriggerPriceType string `json:"sl_trigger_price_type"`
+				TradeAvgPrice      string `json:"trade_avg_price"`
+				TradeVolume        string `json:"trade_volume"`
+				TradeTurnover      string `json:"trade_turnover"`
+				FeeCurrency        string `json:"fee_currency"`
+				Fee                string `json:"fee"`
+				PriceProtect       string `json:"price_protect"`
+				Profit             string `json:"profit"`
+				ContractType       string `json:"contract_type"`
+				CancelReason       string `json:"cancel_reason"`
+				CreateTime         int64  `json:"created_time"`
+				UpdateTime         int64  `json:"updated_time"`
+			} `json:"data"`
+		}
+		err = json.Unmarshal([]byte(historyResp), &historyData)
+		if err != nil {
+			return nil, err
+		}
+		for _, posd := range historyData.List {
+			record := ClosedPnLRecord{
+				Symbol: posd.ContractCode,
+				Side:   posd.PositionSide,
+			}
+			record.EntryPrice, _ = strconv.ParseFloat(posd.Price, 64)
+			record.ExitPrice, _ = strconv.ParseFloat(posd.TradeAvgPrice, 64)
+			record.Quantity, _ = strconv.ParseFloat(posd.TradeVolume, 64)
+			record.RealizedPnL, _ = strconv.ParseFloat(posd.Profit, 64)
+			record.Fee, _ = strconv.ParseFloat(posd.Fee, 64)
+			record.Leverage = int(posd.LeverRate)
+			record.EntryTime = time.UnixMilli(posd.CreateTime).UTC()
+			record.ExitTime = time.UnixMilli(posd.UpdateTime).UTC()
+			record.CloseType = "unknown"
+			records = append(records, record)
+		}
+	}
+	return records, nil
 }
 
 // GetOpenOrders Get open/pending orders from exchange
 // Returns stop-loss, take-profit, and limit orders that haven't been filled
 func (t *HtxTrader) GetOpenOrders(symbol string) ([]OpenOrder, error) {
-	return nil, nil
+	htxSymbol := t.coverSymbol(symbol)
+	apiPath := "/v5/trade/order/opens?contract_code=" + htxSymbol
+	url := t.client.PUrlBuilder.Build(linearswap.GET_METHOD, apiPath, nil)
+	resp, getErr := reqbuilder.HttpGet(url)
+	if getErr != nil {
+		return nil, getErr
+	}
+	var data map[string]interface{}
+	err := json.Unmarshal([]byte(resp), &data)
+	if err != nil {
+		return nil, err
+	}
+	var orders []OpenOrder
+	if data["code"] == 200 {
+		details := data["data"]
+		for _, detail := range details.([]interface{}) {
+			orderId := detail.(map[string]interface{})["order_id"].(string)
+			side := detail.(map[string]interface{})["side"].(string)
+			positionSide := detail.(map[string]interface{})["position_side"].(string)
+			orderType := detail.(map[string]interface{})["type"].(string)
+
+			ord := OpenOrder{
+				OrderID:      orderId,
+				Symbol:       symbol,
+				Side:         side,         // BUY/SELL
+				PositionSide: positionSide, // LONG/SHORT
+				Type:         orderType,    // LIMIT/STOP_MARKET/TAKE_PROFIT_MARKET
+				Status:       strings.ToUpper(detail.(map[string]interface{})["status"].(string)),
+			}
+			if price, e := strconv.ParseFloat(detail.(map[string]interface{})["price"].(string), 64); err != nil {
+				return nil, e
+			} else {
+				ord.Price = price
+			}
+			if stopPrice, e := strconv.ParseFloat(detail.(map[string]interface{})["sl_trigger_price"].(string), 64); err != nil {
+				return nil, e
+			} else {
+				ord.StopPrice = stopPrice
+			}
+			if quantity, e := strconv.ParseFloat(detail.(map[string]interface{})["volume"].(string), 64); err != nil {
+				return nil, e
+			} else {
+				ord.Quantity = quantity
+			}
+			orders = append(orders, ord)
+		}
+	}
+	return orders, nil
 }

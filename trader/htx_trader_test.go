@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/HuobiRDCenter/huobi_futures_Golang/config"
 	"github.com/HuobiRDCenter/huobi_futures_Golang/sdk/linearswap"
 	"github.com/HuobiRDCenter/huobi_futures_Golang/sdk/linearswap/restful"
 	"github.com/HuobiRDCenter/huobi_futures_Golang/sdk/reqbuilder"
@@ -16,64 +15,76 @@ const (
 	secretKey = "a8ded5d8-b02f4dab-f8aefcac-1084e"
 )
 
+func TestAccountInfo(t *testing.T) {
+	// 多资产模式不让用
+	ac := new(restful.AccountClient).Init(accessKey, secretKey, "")
+	apiPath := "/linear-swap-api/v3/unified_account_info"
+	url := ac.PUrlBuilder.Build(linearswap.GET_METHOD, apiPath, nil)
+	resp, getErr := reqbuilder.HttpGet(url)
+	if getErr != nil {
+		t.Error(getErr)
+	}
+	t.Log(resp)
+}
+
 func TestAccountBalance(t *testing.T) {
-	// 初始化 AccountClient（linear swap USDT-M）
-	client := new(restful.AccountClient).Init(accessKey, secretKey, "") // 第三个参数 host 留空默认 api.htx.com 或兼容
-	url := client.PUrlBuilder.Build(linearswap.GET_METHOD, "/v5/account/balance", nil)
-	getResp, getErr := reqbuilder.HttpGet(url)
+	ac := new(restful.AccountClient).Init(accessKey, secretKey, "")
+	apiPath := "/linear-swap-api/v1/swap_balance_valuation"
+	url := ac.PUrlBuilder.Build(linearswap.POST_METHOD, apiPath, nil)
+	data := map[string]any{
+		"valuation_asset": "USDT",
+	}
+	jsonBytes, _ := json.Marshal(data)
+	resp, getErr := reqbuilder.HttpPost(url, string(jsonBytes))
 	if getErr != nil {
-		t.Logf("http get error: %s", getErr)
+		t.Error(getErr)
 	}
-	result := HTXAccountBalanceResponse{}
-	jsonErr := json.Unmarshal([]byte(getResp), &result)
-	if jsonErr != nil {
-		t.Logf("convert json error: %s", jsonErr)
-	}
-	t.Logf("getResp: %v", result)
+	t.Log(resp)
 }
-
-func TestPositions(t *testing.T) {
-	// 初始化 AccountClient（linear swap USDT-M）
-	client := new(restful.AccountClient).Init(accessKey, secretKey, "") // 第三个参数 host 留空默认 api.htx.com 或兼容
-	// ulr
-	url := client.PUrlBuilder.Build(linearswap.GET_METHOD, "/v5/trade/position/opens", nil)
-	getResp, getErr := reqbuilder.HttpGet(url)
+func TestOpenOrders(t *testing.T) {
+	ac := new(restful.AccountClient).Init(accessKey, secretKey, "")
+	apiPath := "/v5/trade/order/opens"
+	url := ac.PUrlBuilder.Build(linearswap.GET_METHOD, apiPath, nil)
+	resp, getErr := reqbuilder.HttpGet(url)
 	if getErr != nil {
-		t.Logf("http get error: %s", getErr)
+		t.Error(getErr)
 	}
-	result := HtxTradePositionOpensResponse{}
-	jsonErr := json.Unmarshal([]byte(getResp), &result)
-	if jsonErr != nil {
-		t.Logf("convert json error: %s", getResp)
-	}
-	t.Logf("getResp: %v", getResp)
+	t.Log(resp)
 }
-
-func TestOrdersHistory(t *testing.T) {
-	// 初始化 AccountClient（linear swap USDT-M）
-	client := new(restful.AccountClient).Init(accessKey, secretKey, "")
-	// ulr
-	url := client.PUrlBuilder.Build(linearswap.GET_METHOD, "/v5/trade/order/details", nil)
-	getResp, getErr := reqbuilder.HttpGet(url)
+func TestGetPositions(t *testing.T) {
+	ac := new(restful.AccountClient).Init(accessKey, secretKey, "")
+	apiPath := "/v5/trade/position/opens"
+	url := ac.PUrlBuilder.Build(linearswap.GET_METHOD, apiPath, nil)
+	resp, getErr := reqbuilder.HttpGet(url)
 	if getErr != nil {
-		t.Logf("http get error: %s", getErr)
+		t.Error(getErr)
 	}
-	result := HtxTradeOrdersResponse{}
-	jsonErr := json.Unmarshal([]byte(getResp), &result)
-	if jsonErr != nil {
-		t.Logf("convert json error: %s", jsonErr)
-	}
-	t.Logf("getResp: %v", getResp)
+	t.Log(resp)
 }
-
-func TestCancelOrder(t *testing.T) {
-	client := new(restful.OrderClient).Init(accessKey, secretKey, config.Host)
-	// url
-	url := client.PUrlBuilder.Build(linearswap.POST_METHOD, "/v5/trade/cancel_all_orders", nil)
-
-	getResp, getErr := reqbuilder.HttpPost(url, "{\"contract_code\": \"BTC-USDT\"}")
+func TestGetClosedPnL(t *testing.T) {
+	ac := new(restful.AccountClient).Init(accessKey, secretKey, "")
+	apiPath := "/v5/trade/order/details"
+	url := ac.PUrlBuilder.Build(linearswap.GET_METHOD, apiPath, nil)
+	resp, getErr := reqbuilder.HttpGet(url)
 	if getErr != nil {
-		t.Logf("http get error: %s", getErr)
+		t.Error(getErr)
 	}
-	t.Logf("getResp: %v", getResp)
+	t.Log(resp)
+	var data map[string]interface{}
+	err := json.Unmarshal([]byte(resp), &data)
+	if err != nil {
+		t.Error("解析失败:", err)
+	}
+	if data["code"] == 200 {
+		details := data["data"]
+		for _, detail := range details.([]interface{}) {
+			contractCode := detail.(map[string]interface{})["contract_code"].(string)
+			marginMode := detail.(map[string]interface{})["margin_mode"].(string)
+			historyApiPath := "/v5/trade/order/history?contract_code=" + contractCode + "&margin_mode=" + marginMode
+			historyUrl := ac.PUrlBuilder.Build(linearswap.GET_METHOD, historyApiPath, nil)
+			historyResp, _ := reqbuilder.HttpGet(historyUrl)
+			t.Log(historyResp)
+		}
+	}
+	// todo 根据返回的合约标志，遍历查询
 }
