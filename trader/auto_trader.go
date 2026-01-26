@@ -1134,9 +1134,18 @@ func (at *AutoTrader) executeOpenLongWithRecord(decision *kernel.Decision, actio
 	}
 
 	// Open position
-	order, err := at.trader.OpenLong(decision.Symbol, quantity, decision.Leverage)
-	if err != nil {
-		return err
+	order := map[string]interface{}{}
+	if config.Get().Islimit {
+		// 如果是限价单直接挂上止盈止损单
+		order, err = at.trader.OpenLongLimit(decision.Symbol, quantity, decision.Leverage, actionRecord.Price, actionRecord.TakeProfit, actionRecord.StopLoss)
+		if err != nil {
+			return err
+		}
+	} else {
+		order, err = at.trader.OpenLong(decision.Symbol, quantity, decision.Leverage)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Record order ID
@@ -1153,14 +1162,16 @@ func (at *AutoTrader) executeOpenLongWithRecord(decision *kernel.Decision, actio
 	posKey := decision.Symbol + "_long"
 	at.positionFirstSeenTime[posKey] = time.Now().UnixMilli()
 
-	// Set stop loss and take profit
-	if err := at.trader.SetStopLoss(decision.Symbol, "LONG", quantity, decision.StopLoss); err != nil {
-		logger.Infof("  ⚠ Failed to set stop loss: %v", err)
+	//如果是市价单 就走原来的逻辑,挂止盈止损单
+	if !config.Get().Islimit {
+		// Set stop loss and take profit
+		if err := at.trader.SetStopLoss(decision.Symbol, "LONG", quantity, decision.StopLoss); err != nil {
+			logger.Infof("  ⚠ Failed to set stop loss: %v", err)
+		}
+		if err := at.trader.SetTakeProfit(decision.Symbol, "LONG", quantity, decision.TakeProfit); err != nil {
+			logger.Infof("  ⚠ Failed to set take profit: %v", err)
+		}
 	}
-	if err := at.trader.SetTakeProfit(decision.Symbol, "LONG", quantity, decision.TakeProfit); err != nil {
-		logger.Infof("  ⚠ Failed to set take profit: %v", err)
-	}
-
 	return nil
 }
 

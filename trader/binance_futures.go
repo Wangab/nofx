@@ -313,6 +313,60 @@ func (t *FuturesTrader) SetLeverage(symbol string, leverage int) error {
 	return nil
 }
 
+func (t *FuturesTrader) OpenLongLimit(symbol string, quantity float64, leverage int, price float64, takeProfit float64, stopLoss float64) (map[string]interface{}, error) {
+	// First cancel all pending orders for this symbol (clean up old stop-loss and take-profit orders)
+	if err := t.CancelAllOrders(symbol); err != nil {
+		logger.Infof("  ⚠ Failed to cancel old pending orders (may not have any): %v", err)
+	}
+
+	// Set leverage
+	if err := t.SetLeverage(symbol, leverage); err != nil {
+		return nil, err
+	}
+
+	// Note: Margin mode should be set by the caller (AutoTrader) before opening position via SetMarginMode
+
+	// Format quantity to correct precision
+	quantityStr, err := t.FormatQuantity(symbol, quantity)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if formatted quantity is 0 (prevent rounding errors)
+	quantityFloat, parseErr := strconv.ParseFloat(quantityStr, 64)
+	if parseErr != nil || quantityFloat <= 0 {
+		return nil, fmt.Errorf("position size too small, rounded to 0 (original: %.8f → formatted: %s). Suggest increasing position amount or selecting a lower-priced coin", quantity, quantityStr)
+	}
+
+	// Check minimum notional value (Binance requires at least 10 USDT)
+	if err := t.CheckMinNotional(symbol, quantityFloat); err != nil {
+		return nil, err
+	}
+	priceStr, err := t.FormatQuantity(symbol, price)
+	// Create market buy order (using br ID)
+	order, err := t.client.NewCreateOrderService().
+		Symbol(symbol).
+		Side(futures.SideTypeBuy).
+		PositionSide(futures.PositionSideTypeLong).
+		Type(futures.OrderTypeLimit).
+		Quantity(quantityStr).
+		NewClientOrderID(getBrOrderID()).
+		Price(priceStr).
+		Do(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("failed to open long position: %w", err)
+	}
+
+	logger.Infof("✓ Opened long position successfully: %s quantity: %s", symbol, quantityStr)
+	logger.Infof("  Order ID: %d", order.OrderID)
+
+	result := make(map[string]interface{})
+	result["orderId"] = order.OrderID
+	result["symbol"] = order.Symbol
+	result["status"] = order.Status
+	return result, nil
+}
+
 // OpenLong opens a long position
 func (t *FuturesTrader) OpenLong(symbol string, quantity float64, leverage int) (map[string]interface{}, error) {
 	// First cancel all pending orders for this symbol (clean up old stop-loss and take-profit orders)
@@ -359,6 +413,61 @@ func (t *FuturesTrader) OpenLong(symbol string, quantity float64, leverage int) 
 	}
 
 	logger.Infof("✓ Opened long position successfully: %s quantity: %s", symbol, quantityStr)
+	logger.Infof("  Order ID: %d", order.OrderID)
+
+	result := make(map[string]interface{})
+	result["orderId"] = order.OrderID
+	result["symbol"] = order.Symbol
+	result["status"] = order.Status
+	return result, nil
+}
+
+func (t *FuturesTrader) OpenShortLimit(symbol string, quantity float64, leverage int, price float64, takeProfit float64, stopLoss float64) (map[string]interface{}, error) {
+	// First cancel all pending orders for this symbol (clean up old stop-loss and take-profit orders)
+	if err := t.CancelAllOrders(symbol); err != nil {
+		logger.Infof("  ⚠ Failed to cancel old pending orders (may not have any): %v", err)
+	}
+
+	// Set leverage
+	if err := t.SetLeverage(symbol, leverage); err != nil {
+		return nil, err
+	}
+
+	// Note: Margin mode should be set by the caller (AutoTrader) before opening position via SetMarginMode
+
+	// Format quantity to correct precision
+	quantityStr, err := t.FormatQuantity(symbol, quantity)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if formatted quantity is 0 (prevent rounding errors)
+	quantityFloat, parseErr := strconv.ParseFloat(quantityStr, 64)
+	if parseErr != nil || quantityFloat <= 0 {
+		return nil, fmt.Errorf("position size too small, rounded to 0 (original: %.8f → formatted: %s). Suggest increasing position amount or selecting a lower-priced coin", quantity, quantityStr)
+	}
+
+	// Check minimum notional value (Binance requires at least 10 USDT)
+	if err := t.CheckMinNotional(symbol, quantityFloat); err != nil {
+		return nil, err
+	}
+	priceStr, err := t.FormatQuantity(symbol, price)
+	// Create market sell order (using br ID)
+	order, err := t.client.NewCreateOrderService().
+		Symbol(symbol).
+		Side(futures.SideTypeSell).
+		PositionSide(futures.PositionSideTypeShort).
+		Type(futures.OrderTypeLimit).
+		Quantity(quantityStr).
+		Price(priceStr).
+		NewClientOrderID(getBrOrderID()).
+		Do(context.Background())
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to open short position: %w", err)
+	}
+
+	logger.Infof("✓ Opened short position successfully: %s quantity: %s", symbol, quantityStr)
 	logger.Infof("  Order ID: %d", order.OrderID)
 
 	result := make(map[string]interface{})

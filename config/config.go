@@ -46,6 +46,7 @@ type Config struct {
 	TwelveDataKey    string // TwelveData API key for forex & metals
 	Variant          string // balanced/scalping/conservative/aggressive
 	AutoClosePositon bool   // enable/disable auto close position
+	Islimit          bool
 }
 
 // Init initializes global configuration (from .env)
@@ -65,6 +66,7 @@ func Init() {
 		DBSSLMode:        "disable",
 		Variant:          "balanced",
 		AutoClosePositon: true,
+		Islimit:          true,
 	}
 
 	// Load from environment variables
@@ -140,6 +142,9 @@ func Init() {
 	}
 	if v := os.Getenv("AUTO_CLOSE_POSITON"); v != "" {
 		cfg.AutoClosePositon = strings.ToLower(v) != "false"
+	}
+	if v := os.Getenv("IS_LIMIT"); v != "" {
+		cfg.Islimit = strings.ToLower(v) != "false"
 	}
 
 	global = cfg

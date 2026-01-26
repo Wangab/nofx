@@ -8,12 +8,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"nofx/logger"
 	"math"
 	"math/big"
 	"net/http"
 	"net/url"
 	"nofx/hook"
+	"nofx/logger"
 	"sort"
 	"strconv"
 	"strings"
@@ -571,6 +571,13 @@ func (t *AsterTrader) GetPositions() ([]map[string]interface{}, error) {
 	}
 
 	return result, nil
+}
+func (t *AsterTrader) OpenLongLimit(symbol string, quantity float64, leverage int, price float64, takeProfit float64, stopLoss float64) (map[string]interface{}, error) {
+	return t.OpenLong(symbol, quantity, leverage)
+}
+
+func (t *AsterTrader) OpenShortLimit(symbol string, quantity float64, leverage int, price float64, takeProfit float64, stopLoss float64) (map[string]interface{}, error) {
+	return t.OpenShort(symbol, quantity, leverage)
 }
 
 // OpenLong Open long position
@@ -1262,14 +1269,14 @@ func (t *AsterTrader) GetOrderStatus(symbol string, orderID string) (map[string]
 
 	// Standardize return fields
 	response := map[string]interface{}{
-		"orderId":     result["orderId"],
-		"symbol":      result["symbol"],
-		"status":      result["status"],
-		"side":        result["side"],
-		"type":        result["type"],
-		"time":        result["time"],
-		"updateTime":  result["updateTime"],
-		"commission":  0.0, // Aster may require separate query
+		"orderId":    result["orderId"],
+		"symbol":     result["symbol"],
+		"status":     result["status"],
+		"side":       result["side"],
+		"type":       result["type"],
+		"time":       result["time"],
+		"updateTime": result["updateTime"],
+		"commission": 0.0, // Aster may require separate query
 	}
 
 	// Parse numeric fields

@@ -573,6 +573,87 @@ func (t *OKXTrader) SetLeverage(symbol string, leverage int) error {
 	return nil
 }
 
+func (t *OKXTrader) OpenLongLimit(symbol string, quantity float64, leverage int, price float64, takeProfit float64, stopLoss float64) (map[string]interface{}, error) {
+	// Cancel old orders
+	t.CancelAllOrders(symbol)
+
+	// Set leverage
+	if err := t.SetLeverage(symbol, leverage); err != nil {
+		logger.Infof("  ⚠️ Failed to set leverage: %v", err)
+	}
+
+	instId := t.convertSymbol(symbol)
+
+	// Get instrument info and calculate contract size
+	inst, err := t.getInstrument(symbol)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get instrument info: %w", err)
+	}
+
+	// OKX uses contract count, need to convert quantity (in base asset) to contract count
+	// sz = quantity / ctVal (number of contracts = asset amount / asset per contract)
+	sz := quantity / inst.CtVal
+	szStr := t.formatSize(sz, inst)
+
+	logger.Infof("  📊 OKX OpenLong: quantity=%.6f, ctVal=%.6f, contracts=%.2f", quantity, inst.CtVal, sz)
+
+	// Check max market order size limit
+	if inst.MaxMktSz > 0 && sz > inst.MaxMktSz {
+		logger.Infof("  ⚠️ OKX market order size %.2f exceeds max %.2f, reducing to max", sz, inst.MaxMktSz)
+		sz = inst.MaxMktSz
+		szStr = t.formatSize(sz, inst)
+	}
+	priceStr, err := t.FormatQuantity(symbol, price)
+	takeProfitStr, _ := t.FormatQuantity(symbol, takeProfit)
+	stopLossStr, _ := t.FormatQuantity(symbol, stopLoss)
+	body := map[string]interface{}{
+		"instId":  instId,
+		"tdMode":  "cross",
+		"side":    "buy",
+		"posSide": "long",
+		"ordType": "limit",
+		"sz":      szStr,
+		"px":      priceStr,
+		"tpOrdPx": takeProfitStr,
+		"slOrdPx": stopLossStr,
+		"clOrdId": genOkxClOrdID(),
+		"tag":     okxTag,
+	}
+
+	data, err := t.doRequest("POST", okxOrderPath, body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open long position: %w", err)
+	}
+
+	var orders []struct {
+		OrdId   string `json:"ordId"`
+		ClOrdId string `json:"clOrdId"`
+		SCode   string `json:"sCode"`
+		SMsg    string `json:"sMsg"`
+	}
+
+	if err := json.Unmarshal(data, &orders); err != nil {
+		return nil, fmt.Errorf("failed to parse order response: %w", err)
+	}
+
+	if len(orders) == 0 || orders[0].SCode != "0" {
+		msg := "unknown error"
+		if len(orders) > 0 {
+			msg = orders[0].SMsg
+		}
+		return nil, fmt.Errorf("failed to open long position: %s", msg)
+	}
+
+	logger.Infof("✓ OKX opened long position successfully: %s size: %s", symbol, szStr)
+	logger.Infof("  Order ID: %s", orders[0].OrdId)
+
+	return map[string]interface{}{
+		"orderId": orders[0].OrdId,
+		"symbol":  symbol,
+		"status":  "FILLED",
+	}, nil
+}
+
 // OpenLong opens long position
 func (t *OKXTrader) OpenLong(symbol string, quantity float64, leverage int) (map[string]interface{}, error) {
 	// Cancel old orders
@@ -641,6 +722,87 @@ func (t *OKXTrader) OpenLong(symbol string, quantity float64, leverage int) (map
 	}
 
 	logger.Infof("✓ OKX opened long position successfully: %s size: %s", symbol, szStr)
+	logger.Infof("  Order ID: %s", orders[0].OrdId)
+
+	return map[string]interface{}{
+		"orderId": orders[0].OrdId,
+		"symbol":  symbol,
+		"status":  "FILLED",
+	}, nil
+}
+
+func (t *OKXTrader) OpenShortLimit(symbol string, quantity float64, leverage int, price float64, takeProfit float64, stopLoss float64) (map[string]interface{}, error) {
+	// Cancel old orders
+	t.CancelAllOrders(symbol)
+
+	// Set leverage
+	if err := t.SetLeverage(symbol, leverage); err != nil {
+		logger.Infof("  ⚠️ Failed to set leverage: %v", err)
+	}
+
+	instId := t.convertSymbol(symbol)
+
+	// Get instrument info and calculate contract size
+	inst, err := t.getInstrument(symbol)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get instrument info: %w", err)
+	}
+
+	// OKX uses contract count, need to convert quantity (in base asset) to contract count
+	// sz = quantity / ctVal (number of contracts = asset amount / asset per contract)
+	sz := quantity / inst.CtVal
+	szStr := t.formatSize(sz, inst)
+
+	logger.Infof("  📊 OKX OpenShort: quantity=%.6f, ctVal=%.6f, contracts=%.2f", quantity, inst.CtVal, sz)
+
+	// Check max market order size limit
+	if inst.MaxMktSz > 0 && sz > inst.MaxMktSz {
+		logger.Infof("  ⚠️ OKX market order size %.2f exceeds max %.2f, reducing to max", sz, inst.MaxMktSz)
+		sz = inst.MaxMktSz
+		szStr = t.formatSize(sz, inst)
+	}
+	priceStr, err := t.FormatQuantity(symbol, price)
+	takeProfitStr, _ := t.FormatQuantity(symbol, takeProfit)
+	stopLossStr, _ := t.FormatQuantity(symbol, stopLoss)
+	body := map[string]interface{}{
+		"instId":  instId,
+		"tdMode":  "cross",
+		"side":    "sell",
+		"posSide": "short",
+		"ordType": "limit",
+		"sz":      szStr,
+		"px":      priceStr,
+		"tpOrdPx": takeProfitStr,
+		"slOrdPx": stopLossStr,
+		"clOrdId": genOkxClOrdID(),
+		"tag":     okxTag,
+	}
+
+	data, err := t.doRequest("POST", okxOrderPath, body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open short position: %w", err)
+	}
+
+	var orders []struct {
+		OrdId   string `json:"ordId"`
+		ClOrdId string `json:"clOrdId"`
+		SCode   string `json:"sCode"`
+		SMsg    string `json:"sMsg"`
+	}
+
+	if err := json.Unmarshal(data, &orders); err != nil {
+		return nil, fmt.Errorf("failed to parse order response: %w", err)
+	}
+
+	if len(orders) == 0 || orders[0].SCode != "0" {
+		msg := "unknown error"
+		if len(orders) > 0 {
+			msg = orders[0].SMsg
+		}
+		return nil, fmt.Errorf("failed to open short position: %s", msg)
+	}
+
+	logger.Infof("✓ OKX opened short position successfully: %s size: %s", symbol, szStr)
 	logger.Infof("  Order ID: %s", orders[0].OrdId)
 
 	return map[string]interface{}{
@@ -1304,19 +1466,19 @@ func (t *OKXTrader) GetClosedPnL(startTime time.Time, limit int) ([]ClosedPnLRec
 		Code string `json:"code"`
 		Msg  string `json:"msg"`
 		Data []struct {
-			InstID      string `json:"instId"`      // Instrument ID (e.g., "BTC-USDT-SWAP")
-			Direction   string `json:"direction"`   // Position direction: "long" or "short"
-			OpenAvgPx   string `json:"openAvgPx"`   // Average open price
-			CloseAvgPx  string `json:"closeAvgPx"`  // Average close price
+			InstID        string `json:"instId"`        // Instrument ID (e.g., "BTC-USDT-SWAP")
+			Direction     string `json:"direction"`     // Position direction: "long" or "short"
+			OpenAvgPx     string `json:"openAvgPx"`     // Average open price
+			CloseAvgPx    string `json:"closeAvgPx"`    // Average close price
 			CloseTotalPos string `json:"closeTotalPos"` // Closed position quantity
-			RealizedPnl string `json:"realizedPnl"` // Realized PnL
-			Fee         string `json:"fee"`         // Total fee
-			FundingFee  string `json:"fundingFee"`  // Funding fee
-			Lever       string `json:"lever"`       // Leverage
-			CTime       string `json:"cTime"`       // Position open time
-			UTime       string `json:"uTime"`       // Position close time
-			Type        string `json:"type"`        // Close type: 1=close position, 2=partial close, 3=liquidation, 4=partial liquidation
-			PosId       string `json:"posId"`       // Position ID
+			RealizedPnl   string `json:"realizedPnl"`   // Realized PnL
+			Fee           string `json:"fee"`           // Total fee
+			FundingFee    string `json:"fundingFee"`    // Funding fee
+			Lever         string `json:"lever"`         // Leverage
+			CTime         string `json:"cTime"`         // Position open time
+			UTime         string `json:"uTime"`         // Position close time
+			Type          string `json:"type"`          // Close type: 1=close position, 2=partial close, 3=liquidation, 4=partial liquidation
+			PosId         string `json:"posId"`         // Position ID
 		} `json:"data"`
 	}
 
@@ -1445,14 +1607,14 @@ func (t *OKXTrader) GetOpenOrders(symbol string) ([]OpenOrder, error) {
 	}
 	if err == nil && algoData != nil {
 		var algoOrders []struct {
-			AlgoId      string `json:"algoId"`
-			InstId      string `json:"instId"`
-			Side        string `json:"side"`
-			PosSide     string `json:"posSide"`
-			OrdType     string `json:"ordType"` // conditional/oco/trigger
-			TriggerPx   string `json:"triggerPx"`
-			Sz          string `json:"sz"`
-			State       string `json:"state"`
+			AlgoId    string `json:"algoId"`
+			InstId    string `json:"instId"`
+			Side      string `json:"side"`
+			PosSide   string `json:"posSide"`
+			OrdType   string `json:"ordType"` // conditional/oco/trigger
+			TriggerPx string `json:"triggerPx"`
+			Sz        string `json:"sz"`
+			State     string `json:"state"`
 		}
 		if err := json.Unmarshal(algoData, &algoOrders); err == nil {
 			for _, order := range algoOrders {

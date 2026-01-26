@@ -697,6 +697,14 @@ func (t *HyperliquidTrader) refreshMetaIfNeeded(coin string) error {
 	return nil
 }
 
+func (t *HyperliquidTrader) OpenLongLimit(symbol string, quantity float64, leverage int, price float64, takeProfit float64, stopLoss float64) (map[string]interface{}, error) {
+	return t.OpenLong(symbol, quantity, leverage)
+}
+
+func (t *HyperliquidTrader) OpenShortLimit(symbol string, quantity float64, leverage int, price float64, takeProfit float64, stopLoss float64) (map[string]interface{}, error) {
+	return t.OpenShort(symbol, quantity, leverage)
+}
+
 // OpenLong opens a long position (supports both crypto and xyz dex)
 func (t *HyperliquidTrader) OpenLong(symbol string, quantity float64, leverage int) (map[string]interface{}, error) {
 	// First cancel all pending orders for this coin

@@ -248,6 +248,13 @@ func (t *HtxTrader) GetPositions() ([]map[string]any, error) {
 
 	return positions, nil
 }
+func (t *HtxTrader) OpenLongLimit(symbol string, quantity float64, leverage int, price float64, takeProfit float64, stopLoss float64) (map[string]interface{}, error) {
+	return t.OpenLong(symbol, quantity, leverage)
+}
+
+func (t *HtxTrader) OpenShortLimit(symbol string, quantity float64, leverage int, price float64, takeProfit float64, stopLoss float64) (map[string]interface{}, error) {
+	return t.OpenShort(symbol, quantity, leverage)
+}
 
 // OpenLong Open long position
 func (t *HtxTrader) OpenLong(symbol string, quantity float64, leverage int) (map[string]interface{}, error) {

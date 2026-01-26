@@ -276,6 +276,53 @@ func (t *BybitTrader) GetPositions() ([]map[string]interface{}, error) {
 	return positions, nil
 }
 
+func (t *BybitTrader) OpenLongLimit(symbol string, quantity float64, leverage int, price float64, takeProfit float64, stopLoss float64) (map[string]interface{}, error) {
+	logger.Infof("[Bybit] ===== OpenLong called: symbol=%s, qty=%.6f, leverage=%d =====", symbol, quantity, leverage)
+
+	// First cancel all pending orders for this symbol (clean up old orders)
+	if err := t.CancelAllOrders(symbol); err != nil {
+		logger.Infof("⚠️ [Bybit] Failed to cancel old pending orders: %v", err)
+	}
+	// Also cancel conditional orders (stop-loss/take-profit) - Bybit keeps them separate
+	if err := t.CancelStopOrders(symbol); err != nil {
+		logger.Infof("⚠️ [Bybit] Failed to cancel old stop orders: %v", err)
+	}
+
+	// Set leverage first
+	if err := t.SetLeverage(symbol, leverage); err != nil {
+		logger.Infof("⚠️ [Bybit] Failed to set leverage: %v", err)
+	}
+
+	// Use FormatQuantity to format quantity
+	qtyStr, _ := t.FormatQuantity(symbol, quantity)
+	priceStr, _ := t.FormatQuantity(symbol, price)
+	takeProfitStr, _ := t.FormatQuantity(symbol, takeProfit)
+	stopLossStr, _ := t.FormatQuantity(symbol, stopLoss)
+	params := map[string]interface{}{
+		"category":    "linear",
+		"symbol":      symbol,
+		"side":        "Buy",
+		"orderType":   "Limit",
+		"qty":         qtyStr,
+		"price":       priceStr,
+		"takeProfit":  takeProfitStr,
+		"stopLoss":    stopLossStr,
+		"positionIdx": 0, // One-way position mode
+	}
+
+	logger.Infof("[Bybit] OpenLong placing order: %+v", params)
+
+	result, err := t.client.NewUtaBybitServiceWithParams(params).PlaceOrder(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("Bybit open long failed: %w", err)
+	}
+
+	// Clear cache
+	t.clearCache()
+
+	return t.parseOrderResult(result)
+}
+
 // OpenLong opens a long position
 func (t *BybitTrader) OpenLong(symbol string, quantity float64, leverage int) (map[string]interface{}, error) {
 	logger.Infof("[Bybit] ===== OpenLong called: symbol=%s, qty=%.6f, leverage=%d =====", symbol, quantity, leverage)
@@ -311,6 +358,53 @@ func (t *BybitTrader) OpenLong(symbol string, quantity float64, leverage int) (m
 	result, err := t.client.NewUtaBybitServiceWithParams(params).PlaceOrder(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("Bybit open long failed: %w", err)
+	}
+
+	// Clear cache
+	t.clearCache()
+
+	return t.parseOrderResult(result)
+}
+
+func (t *BybitTrader) OpenShortLimit(symbol string, quantity float64, leverage int, price float64, takeProfit float64, stopLoss float64) (map[string]interface{}, error) {
+	logger.Infof("[Bybit] ===== OpenShort called: symbol=%s, qty=%.6f, leverage=%d =====", symbol, quantity, leverage)
+
+	// First cancel all pending orders for this symbol (clean up old orders)
+	if err := t.CancelAllOrders(symbol); err != nil {
+		logger.Infof("⚠️ [Bybit] Failed to cancel old pending orders: %v", err)
+	}
+	// Also cancel conditional orders (stop-loss/take-profit) - Bybit keeps them separate
+	if err := t.CancelStopOrders(symbol); err != nil {
+		logger.Infof("⚠️ [Bybit] Failed to cancel old stop orders: %v", err)
+	}
+
+	// Set leverage first
+	if err := t.SetLeverage(symbol, leverage); err != nil {
+		logger.Infof("⚠️ [Bybit] Failed to set leverage: %v", err)
+	}
+
+	// Use FormatQuantity to format quantity
+	qtyStr, _ := t.FormatQuantity(symbol, quantity)
+	priceStr, _ := t.FormatQuantity(symbol, price)
+	takeProfitStr, _ := t.FormatQuantity(symbol, takeProfit)
+	stopLossStr, _ := t.FormatQuantity(symbol, stopLoss)
+	params := map[string]interface{}{
+		"category":    "linear",
+		"symbol":      symbol,
+		"side":        "Sell",
+		"orderType":   "Limit",
+		"qty":         qtyStr,
+		"price":       priceStr,
+		"takeProfit":  takeProfitStr,
+		"stopLoss":    stopLossStr,
+		"positionIdx": 0, // One-way position mode
+	}
+
+	logger.Infof("[Bybit] OpenShort placing order: %+v", params)
+
+	result, err := t.client.NewUtaBybitServiceWithParams(params).PlaceOrder(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("Bybit open short failed: %w", err)
 	}
 
 	// Clear cache

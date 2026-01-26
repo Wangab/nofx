@@ -8,19 +8,19 @@ import (
 
 // ClosedPnLRecord represents a single closed position record from exchange
 type ClosedPnLRecord struct {
-	Symbol       string    // Trading pair (e.g., "BTCUSDT")
-	Side         string    // "long" or "short"
-	EntryPrice   float64   // Entry price
-	ExitPrice    float64   // Exit/close price
-	Quantity     float64   // Position size
-	RealizedPnL  float64   // Realized profit/loss
-	Fee          float64   // Trading fee/commission
-	Leverage     int       // Leverage used
-	EntryTime    time.Time // Position open time
-	ExitTime     time.Time // Position close time
-	OrderID      string    // Close order ID
-	CloseType    string    // "manual", "stop_loss", "take_profit", "liquidation", "unknown"
-	ExchangeID   string    // Exchange-specific position ID
+	Symbol      string    // Trading pair (e.g., "BTCUSDT")
+	Side        string    // "long" or "short"
+	EntryPrice  float64   // Entry price
+	ExitPrice   float64   // Exit/close price
+	Quantity    float64   // Position size
+	RealizedPnL float64   // Realized profit/loss
+	Fee         float64   // Trading fee/commission
+	Leverage    int       // Leverage used
+	EntryTime   time.Time // Position open time
+	ExitTime    time.Time // Position close time
+	OrderID     string    // Close order ID
+	CloseType   string    // "manual", "stop_loss", "take_profit", "liquidation", "unknown"
+	ExchangeID  string    // Exchange-specific position ID
 }
 
 // TradeRecord represents a single trade/fill from exchange
@@ -50,8 +50,12 @@ type Trader interface {
 	// OpenLong Open long position
 	OpenLong(symbol string, quantity float64, leverage int) (map[string]interface{}, error)
 
+	OpenLongLimit(symbol string, quantity float64, leverage int, price float64, takeProfit float64, stopLoss float64) (map[string]interface{}, error)
+
 	// OpenShort Open short position
 	OpenShort(symbol string, quantity float64, leverage int) (map[string]interface{}, error)
+
+	OpenShortLimit(symbol string, quantity float64, leverage int, price float64, takeProfit float64, stopLoss float64) (map[string]interface{}, error)
 
 	// CloseLong Close long position (quantity=0 means close all)
 	CloseLong(symbol string, quantity float64) (map[string]interface{}, error)
@@ -125,9 +129,9 @@ type LimitOrderRequest struct {
 	Price        float64 `json:"price"`         // Limit price
 	Quantity     float64 `json:"quantity"`
 	Leverage     int     `json:"leverage"`
-	PostOnly     bool    `json:"post_only"`     // Maker only order
-	ReduceOnly   bool    `json:"reduce_only"`   // Reduce position only
-	ClientID     string  `json:"client_id"`     // Client order ID for tracking
+	PostOnly     bool    `json:"post_only"`   // Maker only order
+	ReduceOnly   bool    `json:"reduce_only"` // Reduce position only
+	ClientID     string  `json:"client_id"`   // Client order ID for tracking
 }
 
 // LimitOrderResult represents the result of placing a limit order

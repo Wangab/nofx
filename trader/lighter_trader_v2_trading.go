@@ -15,6 +15,14 @@ import (
 	"github.com/elliottech/lighter-go/types"
 )
 
+func (t *LighterTraderV2) OpenLongLimit(symbol string, quantity float64, leverage int, price float64, takeProfit float64, stopLoss float64) (map[string]interface{}, error) {
+	return t.OpenLong(symbol, quantity, leverage)
+}
+
+func (t *LighterTraderV2) OpenShortLimit(symbol string, quantity float64, leverage int, price float64, takeProfit float64, stopLoss float64) (map[string]interface{}, error) {
+	return t.OpenShort(symbol, quantity, leverage)
+}
+
 // OpenLong Open long position (implements Trader interface)
 func (t *LighterTraderV2) OpenLong(symbol string, quantity float64, leverage int) (map[string]interface{}, error) {
 	if t.txClient == nil {
@@ -321,11 +329,11 @@ func (t *LighterTraderV2) CreateOrder(symbol string, isAsk bool, quantity float6
 
 // SendTxResponse Send transaction response
 type SendTxResponse struct {
-	Code                    int                    `json:"code"`
-	Message                 string                 `json:"message"`
-	TxHash                  string                 `json:"tx_hash"`
-	PredictedExecutionTime  int64                  `json:"predicted_execution_time_ms"`
-	Data                    map[string]interface{} `json:"data"`
+	Code                   int                    `json:"code"`
+	Message                string                 `json:"message"`
+	TxHash                 string                 `json:"tx_hash"`
+	PredictedExecutionTime int64                  `json:"predicted_execution_time_ms"`
+	Data                   map[string]interface{} `json:"data"`
 }
 
 // CreateOrderTxInfoAPI Order transaction info with CamelCase JSON tags (matching SDK) + hex signature
