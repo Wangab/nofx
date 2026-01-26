@@ -1,4 +1,4 @@
-import { Github, Send, ExternalLink } from 'lucide-react'
+import { Github, Send } from 'lucide-react'
 import { t, Language } from '../../i18n/translations'
 import { OFFICIAL_LINKS } from '../../constants/branding'
 
