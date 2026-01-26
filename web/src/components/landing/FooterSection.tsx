@@ -57,70 +57,70 @@ export default function FooterSection({ language }: FooterSectionProps) {
               {t('futureStandardAI', language)}
             </p>
             {/* Social Icons */}
-            <div className="flex items-center gap-3">
-              {links.social.map((link) => (
-                <a
-                  key={link.name}
-                  href={link.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-9 h-9 rounded-lg flex items-center justify-center transition-all hover:scale-110"
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.05)',
-                    color: '#848E9C',
-                  }}
-                  title={link.name}
-                >
-                  <link.icon className="w-4 h-4" />
-                </a>
-              ))}
-            </div>
+            {/*<div className="flex items-center gap-3">*/}
+            {/*  {links.social.map((link) => (*/}
+            {/*    <a*/}
+            {/*      key={link.name}*/}
+            {/*      href={link.href}*/}
+            {/*      target="_blank"*/}
+            {/*      rel="noopener noreferrer"*/}
+            {/*      className="w-9 h-9 rounded-lg flex items-center justify-center transition-all hover:scale-110"*/}
+            {/*      style={{*/}
+            {/*        background: 'rgba(255, 255, 255, 0.05)',*/}
+            {/*        color: '#848E9C',*/}
+            {/*      }}*/}
+            {/*      title={link.name}*/}
+            {/*    >*/}
+            {/*      <link.icon className="w-4 h-4" />*/}
+            {/*    </a>*/}
+            {/*  ))}*/}
+            {/*</div>*/}
           </div>
 
           {/* Links */}
-          <div>
-            <h4 className="text-sm font-semibold mb-4" style={{ color: '#EAECEF' }}>
-              {t('links', language)}
-            </h4>
-            <ul className="space-y-3">
-              {links.social.map((link) => (
-                <li key={link.name}>
-                  <a
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm transition-colors hover:text-[#F0B90B]"
-                    style={{ color: '#5E6673' }}
-                  >
-                    {link.name}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {/*<div>*/}
+          {/*  <h4 className="text-sm font-semibold mb-4" style={{ color: '#EAECEF' }}>*/}
+          {/*    {t('links', language)}*/}
+          {/*  </h4>*/}
+          {/*  <ul className="space-y-3">*/}
+          {/*    {links.social.map((link) => (*/}
+          {/*      <li key={link.name}>*/}
+          {/*        <a*/}
+          {/*          href={link.href}*/}
+          {/*          target="_blank"*/}
+          {/*          rel="noopener noreferrer"*/}
+          {/*          className="text-sm transition-colors hover:text-[#F0B90B]"*/}
+          {/*          style={{ color: '#5E6673' }}*/}
+          {/*        >*/}
+          {/*          {link.name}*/}
+          {/*        </a>*/}
+          {/*      </li>*/}
+          {/*    ))}*/}
+          {/*  </ul>*/}
+          {/*</div>*/}
 
           {/* Resources */}
-          <div>
-            <h4 className="text-sm font-semibold mb-4" style={{ color: '#EAECEF' }}>
-              {t('resources', language)}
-            </h4>
-            <ul className="space-y-3">
-              {links.resources.map((link) => (
-                <li key={link.name}>
-                  <a
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm transition-colors hover:text-[#F0B90B] inline-flex items-center gap-1"
-                    style={{ color: '#5E6673' }}
-                  >
-                    {link.name}
-                    <ExternalLink className="w-3 h-3 opacity-50" />
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {/*<div>*/}
+          {/*  <h4 className="text-sm font-semibold mb-4" style={{ color: '#EAECEF' }}>*/}
+          {/*    {t('resources', language)}*/}
+          {/*  </h4>*/}
+          {/*  <ul className="space-y-3">*/}
+          {/*    {links.resources.map((link) => (*/}
+          {/*      <li key={link.name}>*/}
+          {/*        <a*/}
+          {/*          href={link.href}*/}
+          {/*          target="_blank"*/}
+          {/*          rel="noopener noreferrer"*/}
+          {/*          className="text-sm transition-colors hover:text-[#F0B90B] inline-flex items-center gap-1"*/}
+          {/*          style={{ color: '#5E6673' }}*/}
+          {/*        >*/}
+          {/*          {link.name}*/}
+          {/*          <ExternalLink className="w-3 h-3 opacity-50" />*/}
+          {/*        </a>*/}
+          {/*      </li>*/}
+          {/*    ))}*/}
+          {/*  </ul>*/}
+          {/*</div>*/}
 
           {/* Supporters */}
           <div>

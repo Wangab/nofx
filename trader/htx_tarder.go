@@ -274,19 +274,19 @@ func (t *HtxTrader) OpenLong(symbol string, quantity float64, leverage int) (map
 	}
 	jsonBytes, err := json.Marshal(data)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("❌ Htx OpenLong failed: %w", err)
 	}
 	resp, getErr := reqbuilder.HttpPost(url, string(jsonBytes))
 	if getErr != nil {
-		return nil, getErr
+		return nil, fmt.Errorf("❌ Htx OpenLong failed: %w", getErr)
 	}
 	result := HTXOrderResponse{}
 	jsonErr := json.Unmarshal([]byte(resp), &result)
 	if jsonErr != nil {
-		return nil, fmt.Errorf("failed to open htx long order: %w", jsonErr)
+		return nil, fmt.Errorf("❌ failed to open htx long order: %w", jsonErr)
 	}
 	if result.Code != 200 {
-		return nil, fmt.Errorf("failed to open htx long order: %s", result.Message)
+		return nil, fmt.Errorf("❌ failed to open htx long order: %s", result.Message)
 	}
 	return map[string]any{
 		"orderId": result.Data.OrderId,
@@ -320,11 +320,11 @@ func (t *HtxTrader) OpenShort(symbol string, quantity float64, leverage int) (ma
 	}
 	jsonBytes, err := json.Marshal(data)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("❌ Htx OpenShort failed: %w", err)
 	}
 	resp, getErr := reqbuilder.HttpPost(url, string(jsonBytes))
 	if getErr != nil {
-		return nil, getErr
+		return nil, fmt.Errorf("❌ Htx OpenShort failed: %w", getErr)
 	}
 	result := HTXOrderResponse{}
 	jsonErr := json.Unmarshal([]byte(resp), &result)
@@ -359,11 +359,11 @@ func (t *HtxTrader) CloseLong(symbol string, quantity float64) (map[string]inter
 	}
 	jsonBytes, err := json.Marshal(data)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("❌ Htx CloseLong failed: %w", err)
 	}
 	resp, getErr := reqbuilder.HttpPost(url, string(jsonBytes))
 	if getErr != nil {
-		return nil, getErr
+		return nil, fmt.Errorf("❌ Htx CloseLong failed: %w", getErr)
 	}
 	result := HTXOrderResponse{}
 	jsonErr := json.Unmarshal([]byte(resp), &result)
@@ -398,11 +398,11 @@ func (t *HtxTrader) CloseShort(symbol string, quantity float64) (map[string]inte
 	}
 	jsonBytes, err := json.Marshal(data)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("❌ Htx CloseShort failed: %w", err)
 	}
 	resp, getErr := reqbuilder.HttpPost(url, string(jsonBytes))
 	if getErr != nil {
-		return nil, getErr
+		return nil, fmt.Errorf("❌ Htx CloseShort failed: %w", err)
 	}
 	result := HTXOrderResponse{}
 	jsonErr := json.Unmarshal([]byte(resp), &result)
@@ -434,11 +434,11 @@ func (t *HtxTrader) SetLeverage(symbol string, leverage int) error {
 	}
 	jsonBytes, err := json.Marshal(data)
 	if err != nil {
-		return err
+		return fmt.Errorf("❌ Htx SetLerverage failed: %w", err)
 	}
 	_, getErr := reqbuilder.HttpPost(url, string(jsonBytes))
 	if getErr != nil {
-		return getErr
+		return fmt.Errorf("❌ Htx SetLerverage failed: %w", err)
 	}
 	return nil
 }
@@ -463,11 +463,11 @@ func (t *HtxTrader) SetMarginMode(symbol string, isCrossMargin bool) error {
 	}
 	jsonBytes, err := json.Marshal(data)
 	if err != nil {
-		return err
+		return fmt.Errorf("❌ Htx SetMarginMode failed: %w", err)
 	}
 	_, getErr := reqbuilder.HttpPost(url, string(jsonBytes))
 	if getErr != nil {
-		return getErr
+		return fmt.Errorf("❌ Htx SetMarginMode failed: %w", getErr)
 	}
 	return nil
 }
@@ -479,7 +479,7 @@ func (t *HtxTrader) GetMarketPrice(symbol string) (float64, error) {
 	requestUrl := fmt.Sprintf("%s?contract_code=%s&period=1min&size=1", url, symbol)
 	resp, err := reqbuilder.HttpGet(requestUrl)
 	if err != nil {
-		return 0, fmt.Errorf("failed to get htx positions: %w", err)
+		return 0, fmt.Errorf("failed to get htx GetMarketPrice: %w", err)
 	}
 	result := HTXContractPriceResponse{}
 	jsonErr := json.Unmarshal([]byte(resp), &result)
@@ -515,11 +515,11 @@ func (t *HtxTrader) SetStopLoss(symbol string, positionSide string, quantity, st
 	}
 	jsonBytes, err := json.Marshal(data)
 	if err != nil {
-		return err
+		return fmt.Errorf("❌ Htx SetStopLoss failed: %w", err)
 	}
 	_, getErr := reqbuilder.HttpPost(url, string(jsonBytes))
 	if getErr != nil {
-		return getErr
+		return fmt.Errorf("❌ Htx SetStopLess failed: %w", err)
 	}
 	return nil
 }
@@ -543,28 +543,104 @@ func (t *HtxTrader) SetTakeProfit(symbol string, positionSide string, quantity, 
 	}
 	jsonBytes, err := json.Marshal(data)
 	if err != nil {
-		return err
+		return fmt.Errorf("❌ Htx SetTakeProfit failed: %w", err)
 	}
 	_, getErr := reqbuilder.HttpPost(url, string(jsonBytes))
 	if getErr != nil {
-		return getErr
+		return fmt.Errorf("❌ Htx SetTakeProfit failed: %w", getErr)
 	}
-	return nil
-}
-
-func (t *HtxTrader) GetStopLossOrders(symbol string) error {
-	symbol = t.coverSymbol(symbol)
 	return nil
 }
 
 // CancelStopLossOrders Cancel only stop-loss orders (BUG fix: don't delete take-profit when adjusting stop-loss)
 func (t *HtxTrader) CancelStopLossOrders(symbol string) error {
-
+	htxSymbol := t.coverSymbol(symbol)
+	apiPath := "/v5/trade/order/opens?contract_code=" + htxSymbol
+	url := t.client.PUrlBuilder.Build(linearswap.GET_METHOD, apiPath, nil)
+	resp, getErr := reqbuilder.HttpGet(url)
+	if getErr != nil {
+		return getErr
+	}
+	var data struct {
+		List []struct {
+			Id             string `json:"id"`
+			ContractCode   string `json:"contract_code"`
+			OrderId        string `json:"order_id"`
+			TpTriggerPrice string `json:"tp_trigger_price"`
+			SlTriggerPrice string `json:"sl_trigger_price"`
+		} `json:"data"`
+	}
+	err := json.Unmarshal([]byte(resp), &data)
+	if err != nil {
+		return fmt.Errorf("❌ Htx CancelStopLossOrders failed: %w", err)
+	}
+	var ids []string
+	for _, pos := range data.List {
+		if pos.SlTriggerPrice != "" {
+			ids = append(ids, pos.OrderId)
+		}
+	}
+	if len(ids) > 0 {
+		cancelUrl := t.client.PUrlBuilder.Build(linearswap.POST_METHOD, "/v5/trade/cancel_batch_orders", nil)
+		dataPost := map[string]any{
+			"contract_code": symbol,
+			"order_id":      ids,
+		}
+		jsonBytes, err2 := json.Marshal(dataPost)
+		if err2 != nil {
+			return fmt.Errorf("❌ Htx CanselStopLoss failed: %w", err2)
+		}
+		_, e := reqbuilder.HttpPost(cancelUrl, string(jsonBytes))
+		if e != nil {
+			return e
+		}
+	}
 	return nil
 }
 
 // CancelTakeProfitOrders Cancel only take-profit orders (BUG fix: don't delete stop-loss when adjusting take-profit)
 func (t *HtxTrader) CancelTakeProfitOrders(symbol string) error {
+	htxSymbol := t.coverSymbol(symbol)
+	apiPath := "/v5/trade/order/opens?contract_code=" + htxSymbol
+	url := t.client.PUrlBuilder.Build(linearswap.GET_METHOD, apiPath, nil)
+	resp, getErr := reqbuilder.HttpGet(url)
+	if getErr != nil {
+		return getErr
+	}
+	var data struct {
+		List []struct {
+			Id             string `json:"id"`
+			ContractCode   string `json:"contract_code"`
+			OrderId        string `json:"order_id"`
+			TpTriggerPrice string `json:"tp_trigger_price"`
+			SlTriggerPrice string `json:"sl_trigger_price"`
+		} `json:"data"`
+	}
+	err := json.Unmarshal([]byte(resp), &data)
+	if err != nil {
+		return fmt.Errorf("❌ Htx CancelTakeProfitOrders failed: %w", err)
+	}
+	var ids []string
+	for _, pos := range data.List {
+		if pos.TpTriggerPrice != "" {
+			ids = append(ids, pos.OrderId)
+		}
+	}
+	if len(ids) > 0 {
+		cancelUrl := t.client.PUrlBuilder.Build(linearswap.POST_METHOD, "/v5/trade/cancel_batch_orders", nil)
+		dataPost := map[string]any{
+			"contract_code": symbol,
+			"order_id":      ids,
+		}
+		jsonBytes, err1 := json.Marshal(dataPost)
+		if err1 != nil {
+			return fmt.Errorf("❌ Htx CancelTakeProfitOrders failed: %w", err1)
+		}
+		_, e := reqbuilder.HttpPost(cancelUrl, string(jsonBytes))
+		if e != nil {
+			return fmt.Errorf("❌ Htx CancelTakeProfitOrders failed: %w", e)
+		}
+	}
 	return nil
 }
 
@@ -578,17 +654,25 @@ func (t *HtxTrader) CancelAllOrders(symbol string) error {
 	}
 	jsonBytes, err := json.Marshal(data)
 	if err != nil {
-		return err
+		return fmt.Errorf("❌ Htx CancelAllOrders failed: %w", err)
 	}
 	_, getErr := reqbuilder.HttpPost(url, string(jsonBytes))
 	if getErr != nil {
-		return getErr
+		return fmt.Errorf("❌ Htx CancelALLOrders failed: %w", getErr)
 	}
 	return nil
 }
 
 // CancelStopOrders Cancel stop-loss/take-profit orders for this symbol (for adjusting stop-loss/take-profit positions)
 func (t *HtxTrader) CancelStopOrders(symbol string) error {
+	err1 := t.CancelStopLossOrders(symbol)
+	if err1 != nil {
+		return fmt.Errorf("❌ Htx CancelStopOrders failed: %w", err1)
+	}
+	err2 := t.CancelTakeProfitOrders(symbol)
+	if err2 != nil {
+		return fmt.Errorf("❌ Htx CancelStopOrders failed: %w", err2)
+	}
 	return nil
 }
 
@@ -600,7 +684,42 @@ func (t *HtxTrader) FormatQuantity(symbol string, quantity float64) (string, err
 // GetOrderStatus Get order status
 // Returns: status(FILLED/NEW/CANCELED), avgPrice, executedQty, commission
 func (t *HtxTrader) GetOrderStatus(symbol string, orderID string) (map[string]interface{}, error) {
-	return nil, nil
+	symbol = t.coverSymbol(symbol)
+	apiPath := fmt.Sprintf("/v5/trade/order?contract_code=%d&order_id=%d", symbol, orderID)
+	url := t.client.PUrlBuilder.Build(linearswap.GET_METHOD, apiPath, nil)
+	resp, getErr := reqbuilder.HttpGet(url)
+	if getErr != nil {
+		return nil, fmt.Errorf("❌ Htx GetOrderStatus failed: %w", getErr)
+	}
+	var data struct {
+		State         string `json:"state"`
+		TradeAvgPrice string `json:"trade_avg_price"`
+		TradeVolume   string `json:"trade_volume"`
+		RealProfit    string `json:"real_profit"`
+	}
+	err := json.Unmarshal([]byte(resp), &data)
+	if err != nil {
+		return nil, fmt.Errorf("❌ Htx GetOrderStatus failed: %w", err)
+	}
+	status := data.State
+	unifiedStatus := status
+	switch status {
+	case "filled":
+		unifiedStatus = "FILLED"
+	case "new":
+		unifiedStatus = "NEW"
+	case "canceled", "rejected":
+		unifiedStatus = "CANCELED"
+	case "partially_filled", "partially_canceled":
+		unifiedStatus = "PARTIALLY_FILLED"
+	}
+	return map[string]interface{}{
+		"orderId":     orderID,
+		"status":      unifiedStatus,
+		"avgPrice":    data.TradeAvgPrice,
+		"executedQty": data.TradeVolume,
+		"commission":  data.RealProfit,
+	}, nil
 }
 
 // GetClosedPnL Get closed position PnL records from exchange
@@ -612,7 +731,7 @@ func (t *HtxTrader) GetClosedPnL(startTime time.Time, limit int) ([]ClosedPnLRec
 	url := t.client.PUrlBuilder.Build(linearswap.GET_METHOD, apiPath, nil)
 	resp, getErr := reqbuilder.HttpGet(url)
 	if getErr != nil {
-		return nil, getErr
+		return nil, fmt.Errorf("❌ Htx GetClosePNL failed: %w", getErr)
 	}
 	var data struct {
 		List []struct {
@@ -641,7 +760,7 @@ func (t *HtxTrader) GetClosedPnL(startTime time.Time, limit int) ([]ClosedPnLRec
 	}
 	err := json.Unmarshal([]byte(resp), &data)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("❌ Htx GetClosePNL failed: %w", err)
 	}
 	records := make([]ClosedPnLRecord, 0, len(data.List))
 	for _, pos := range data.List {
@@ -691,7 +810,7 @@ func (t *HtxTrader) GetClosedPnL(startTime time.Time, limit int) ([]ClosedPnLRec
 		}
 		err = json.Unmarshal([]byte(historyResp), &historyData)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("❌ Htx GetClosePNL failed: %w", err)
 		}
 		for _, posd := range historyData.List {
 			record := ClosedPnLRecord{
@@ -721,12 +840,12 @@ func (t *HtxTrader) GetOpenOrders(symbol string) ([]OpenOrder, error) {
 	url := t.client.PUrlBuilder.Build(linearswap.GET_METHOD, apiPath, nil)
 	resp, getErr := reqbuilder.HttpGet(url)
 	if getErr != nil {
-		return nil, getErr
+		return nil, fmt.Errorf("❌ Htx GetOpenOrders failed: %w", getErr)
 	}
 	var data map[string]interface{}
 	err := json.Unmarshal([]byte(resp), &data)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("❌ Htx GetOpenOrders failed: %w", err)
 	}
 	var orders []OpenOrder
 	if data["code"] == 200 {
@@ -745,18 +864,18 @@ func (t *HtxTrader) GetOpenOrders(symbol string) ([]OpenOrder, error) {
 				Type:         orderType,    // LIMIT/STOP_MARKET/TAKE_PROFIT_MARKET
 				Status:       strings.ToUpper(detail.(map[string]interface{})["status"].(string)),
 			}
-			if price, e := strconv.ParseFloat(detail.(map[string]interface{})["price"].(string), 64); err != nil {
-				return nil, e
+			if price, e := strconv.ParseFloat(detail.(map[string]interface{})["price"].(string), 64); e != nil {
+				return nil, fmt.Errorf("❌ Htx GetOpenOrders failed: %w", e)
 			} else {
 				ord.Price = price
 			}
-			if stopPrice, e := strconv.ParseFloat(detail.(map[string]interface{})["sl_trigger_price"].(string), 64); err != nil {
-				return nil, e
+			if stopPrice, e := strconv.ParseFloat(detail.(map[string]interface{})["sl_trigger_price"].(string), 64); e != nil {
+				return nil, fmt.Errorf("❌ Htx GetOpenOrders failed: %w", e)
 			} else {
 				ord.StopPrice = stopPrice
 			}
-			if quantity, e := strconv.ParseFloat(detail.(map[string]interface{})["volume"].(string), 64); err != nil {
-				return nil, e
+			if quantity, e := strconv.ParseFloat(detail.(map[string]interface{})["volume"].(string), 64); e != nil {
+				return nil, fmt.Errorf("❌ Htx GetOpenOrders failed: %w", e)
 			} else {
 				ord.Quantity = quantity
 			}
