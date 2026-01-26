@@ -11,8 +11,8 @@ import (
 
 // 必须是合约专用的 API Key（在 HTX 官网 API 管理 → 合约权限）
 const (
-	accessKey = "ba925fe2-ca7a210e-a6c9a3ff-dbye2sf5t7"
-	secretKey = "a8ded5d8-b02f4dab-f8aefcac-1084e"
+	accessKey = "xxx"
+	secretKey = "xxx"
 )
 
 func TestAccountInfo(t *testing.T) {
