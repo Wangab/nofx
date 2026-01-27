@@ -692,7 +692,7 @@ func (t *HtxTrader) FormatQuantity(symbol string, quantity float64) (string, err
 // Returns: status(FILLED/NEW/CANCELED), avgPrice, executedQty, commission
 func (t *HtxTrader) GetOrderStatus(symbol string, orderID string) (map[string]interface{}, error) {
 	symbol = t.coverSymbol(symbol)
-	apiPath := fmt.Sprintf("/v5/trade/order?contract_code=%d&order_id=%d", symbol, orderID)
+	apiPath := fmt.Sprintf("/v5/trade/order?contract_code=%s&order_id=%s", symbol, orderID)
 	url := t.client.PUrlBuilder.Build(linearswap.GET_METHOD, apiPath, nil)
 	resp, getErr := reqbuilder.HttpGet(url)
 	if getErr != nil {
