@@ -5,6 +5,8 @@ import type { CoinSourceConfig } from '../../types'
 interface CoinSourceEditorProps {
   config: CoinSourceConfig
   onChange: (config: CoinSourceConfig) => void
+  riskControl?: any
+  onRiskControlChange?: (config: any) => void
   disabled?: boolean
   language: string
 }
@@ -12,6 +14,8 @@ interface CoinSourceEditorProps {
 export function CoinSourceEditor({
   config,
   onChange,
+  riskControl,
+  onRiskControlChange,
   disabled,
   language,
 }: CoinSourceEditorProps) {
@@ -59,6 +63,11 @@ export function CoinSourceEditor({
       excludedCoins: { zh: '排除币种', en: 'Excluded Coins' },
       excludedCoinsDesc: { zh: '这些币种将从所有数据源中排除，不会被交易', en: 'These coins will be excluded from all sources and will not be traded' },
       addExcludedCoin: { zh: '添加排除', en: 'Add Excluded' },
+      orderType: { zh: '订单类型', en: 'Order Type' },
+      orderTypeDesc: { zh: '选择下单类型', en: 'Select order type to use' },
+      limit: { zh: '限价单', en: 'Limit Order' },
+      market: { zh: '市价单', en: 'Market Order' },
+      postOnly: { zh: '只做市商', en: 'Post Only' },
       nofxosNote: { zh: '使用 NofxOS API Key（在指标配置中设置）', en: 'Uses NofxOS API Key (set in Indicators config)' },
     }
     return translations[key]?.[language] || key
@@ -319,6 +328,41 @@ export function CoinSourceEditor({
           </div>
         )}
       </div>
+
+      {/* Order Type */}
+      {riskControl && onRiskControlChange && (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <Zap className="w-4 h-4 text-nofx-gold" />
+            <label className="text-sm font-medium text-nofx-text">
+              {t('orderType')}
+            </label>
+          </div>
+          <p className="text-xs mb-3 text-nofx-text-muted">
+            {t('orderTypeDesc')}
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {['limit', 'market', 'post_only'].map((type) => (
+              <button
+                key={type}
+                onClick={() => {
+                  if (!disabled) {
+                    onRiskControlChange({ ...riskControl, order_type: type })
+                  }
+                }}
+                disabled={disabled}
+                className={`p-3 rounded-lg border transition-all text-sm font-medium ${
+                  riskControl.order_type === type
+                    ? 'border-nofx-gold bg-nofx-gold/10 text-nofx-gold'
+                    : 'border-nofx-gold/20 bg-nofx-bg hover:border-nofx-gold/50 text-nofx-text'
+                }`}
+              >
+                {t(type)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* AI500 Options - only for ai500 mode */}
       {config.source_type === 'ai500' && (

@@ -603,6 +603,7 @@ export interface RiskControlConfig {
   min_position_size: number;       // Min position size in USDT (CODE ENFORCED)
   min_risk_reward_ratio: number;   // Min take_profit / stop_loss ratio (AI guided)
   min_confidence: number;          // Min AI confidence to open position (AI guided)
+  order_type?: 'limit' | 'market' | 'post_only';  // Order type for trading
 }
 
 // Debate Arena Types

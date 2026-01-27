@@ -201,7 +201,7 @@ export function StrategyStudioPage() {
         { headers: { Authorization: `Bearer ${token}` } }
       )
       const defaultConfig = await configResponse.json()
-
+      defaultConfig.order_type = 'market' 
       const response = await fetch(`${API_BASE}/api/strategies`, {
         method: 'POST',
         headers: {
@@ -572,6 +572,8 @@ export function StrategyStudioPage() {
         <CoinSourceEditor
           config={editingConfig.coin_source}
           onChange={(coinSource) => updateConfig('coin_source', coinSource)}
+          riskControl={editingConfig.risk_control}
+          onRiskControlChange={(riskControl) => updateConfig('risk_control', riskControl)}
           disabled={selectedStrategy?.is_default}
           language={language}
         />

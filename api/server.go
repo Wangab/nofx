@@ -410,6 +410,7 @@ type CreateTraderRequest struct {
 	SystemPromptTemplate string `json:"system_prompt_template"` // System prompt template name
 	UseAI500             bool   `json:"use_ai500"`
 	UseOITop             bool   `json:"use_oi_top"`
+	OrderType            string `json:"order_type"` // market/limit
 }
 
 type ModelConfig struct {
@@ -725,6 +726,7 @@ type UpdateTraderRequest struct {
 	CustomPrompt         string `json:"custom_prompt"`
 	OverrideBasePrompt   bool   `json:"override_base_prompt"`
 	SystemPromptTemplate string `json:"system_prompt_template"`
+	OrderType            string `json:"order_type"` // market/limit
 }
 
 // handleUpdateTrader Update trader configuration
@@ -800,7 +802,10 @@ func (s *Server) handleUpdateTrader(c *gin.Context) {
 	if strategyID == "" {
 		strategyID = existingTrader.StrategyID
 	}
-
+	orderType := req.OrderType
+	if orderType == "" {
+		orderType = req.OrderType
+	}
 	// Update trader configuration
 	traderRecord := &store.Trader{
 		ID:                   traderID,

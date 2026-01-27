@@ -1094,13 +1094,11 @@ func (at *AutoTrader) executeOpenLongWithRecord(decision *kernel.Decision, actio
 	} else {
 		equity = availableBalance // Fallback to available balance
 	}
-
 	// [CODE ENFORCED] Position Value Ratio Check: position_value <= equity × ratio
 	adjustedPositionSize, wasCapped := at.enforcePositionValueRatio(decision.PositionSizeUSD, equity, decision.Symbol)
 	if wasCapped {
 		decision.PositionSizeUSD = adjustedPositionSize
 	}
-
 	// ⚠️ Auto-adjust position size if insufficient margin
 	// Formula: totalRequired = positionSize/leverage + positionSize*0.001 + positionSize/leverage*0.01
 	//        = positionSize * (1.01/leverage + 0.001)
@@ -1135,7 +1133,9 @@ func (at *AutoTrader) executeOpenLongWithRecord(decision *kernel.Decision, actio
 
 	// Open position
 	order := map[string]interface{}{}
-	if config.Get().Islimit {
+	orderType := at.strategyEngine.GetConfig().RiskControl.OrderType
+	if "limit" == strings.ToLower(orderType) {
+		logger.Infof("️⚠️ ⚠️ ⚠️  Execute Open Long Order Type mode:%s", orderType)
 		// 如果是限价单直接挂上止盈止损单
 		order, err = at.trader.OpenLongLimit(decision.Symbol, quantity, decision.Leverage, actionRecord.Price, actionRecord.TakeProfit, actionRecord.StopLoss)
 		if err != nil {
@@ -1163,7 +1163,7 @@ func (at *AutoTrader) executeOpenLongWithRecord(decision *kernel.Decision, actio
 	at.positionFirstSeenTime[posKey] = time.Now().UnixMilli()
 
 	//如果是市价单 就走原来的逻辑,挂止盈止损单
-	if !config.Get().Islimit {
+	if "limit" != strings.ToLower(orderType) {
 		// Set stop loss and take profit
 		if err := at.trader.SetStopLoss(decision.Symbol, "LONG", quantity, decision.StopLoss); err != nil {
 			logger.Infof("  ⚠ Failed to set stop loss: %v", err)
@@ -1260,13 +1260,21 @@ func (at *AutoTrader) executeOpenShortWithRecord(decision *kernel.Decision, acti
 		logger.Infof("  ⚠️ Failed to set margin mode: %v", err)
 		// Continue execution, doesn't affect trading
 	}
-
 	// Open position
-	order, err := at.trader.OpenShort(decision.Symbol, quantity, decision.Leverage)
-	if err != nil {
-		return err
+	order := map[string]interface{}{}
+	orderType := at.strategyEngine.GetConfig().RiskControl.OrderType
+	if "limit" == strings.ToLower(orderType) {
+		logger.Infof("️⚠️ ⚠️ ⚠️ Execute Open Short Order Type mode:%s", orderType)
+		order, err = at.trader.OpenShortLimit(decision.Symbol, quantity, decision.Leverage, actionRecord.Price, actionRecord.TakeProfit, actionRecord.StopLoss)
+		if err != nil {
+			return err
+		}
+	} else {
+		order, err = at.trader.OpenShort(decision.Symbol, quantity, decision.Leverage)
+		if err != nil {
+			return err
+		}
 	}
-
 	// Record order ID
 	if orderID, ok := order["orderId"].(int64); ok {
 		actionRecord.OrderID = orderID
@@ -1282,13 +1290,15 @@ func (at *AutoTrader) executeOpenShortWithRecord(decision *kernel.Decision, acti
 	at.positionFirstSeenTime[posKey] = time.Now().UnixMilli()
 
 	// Set stop loss and take profit
-	if err := at.trader.SetStopLoss(decision.Symbol, "SHORT", quantity, decision.StopLoss); err != nil {
-		logger.Infof("  ⚠ Failed to set stop loss: %v", err)
+	//如果是市价单 就走原来的逻辑,挂止盈止损单
+	if "limit" != strings.ToLower(orderType) {
+		if err := at.trader.SetStopLoss(decision.Symbol, "SHORT", quantity, decision.StopLoss); err != nil {
+			logger.Infof("  ⚠ Failed to set stop loss: %v", err)
+		}
+		if err := at.trader.SetTakeProfit(decision.Symbol, "SHORT", quantity, decision.TakeProfit); err != nil {
+			logger.Infof("  ⚠ Failed to set take profit: %v", err)
+		}
 	}
-	if err := at.trader.SetTakeProfit(decision.Symbol, "SHORT", quantity, decision.TakeProfit); err != nil {
-		logger.Infof("  ⚠ Failed to set take profit: %v", err)
-	}
-
 	return nil
 }
 

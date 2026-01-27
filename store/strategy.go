@@ -48,7 +48,6 @@ type StrategyConfig struct {
 	RiskControl RiskControlConfig `json:"risk_control"`
 	// editable sections of System Prompt
 	PromptSections PromptSectionsConfig `json:"prompt_sections,omitempty"`
-
 	// Grid trading configuration (only used when StrategyType == "grid_trading")
 	GridConfig *GridStrategyConfig `json:"grid_config,omitempty"`
 }
@@ -219,7 +218,8 @@ type RiskControlConfig struct {
 	// Min take_profit / stop_loss ratio (AI guided)
 	MinRiskRewardRatio float64 `json:"min_risk_reward_ratio"`
 	// Min AI confidence to open position (AI guided)
-	MinConfidence int `json:"min_confidence"`
+	MinConfidence int    `json:"min_confidence"`
+	OrderType     string `json:"order_type,omitempty"`
 }
 
 // NewStrategyStore creates a new StrategyStore
@@ -307,6 +307,7 @@ func GetDefaultStrategyConfig(lang string) StrategyConfig {
 			MinPositionSize:              12,  // Min 12 USDT per position (CODE ENFORCED)
 			MinRiskRewardRatio:           3.0, // Min 3:1 profit/loss ratio (AI guided)
 			MinConfidence:                75,  // Min 75% confidence (AI guided)
+			OrderType:                    "market",
 		},
 	}
 
