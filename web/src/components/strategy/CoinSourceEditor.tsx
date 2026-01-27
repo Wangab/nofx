@@ -342,7 +342,7 @@ export function CoinSourceEditor({
             {t('orderTypeDesc')}
           </p>
           <div className="grid grid-cols-3 gap-2">
-            {['limit', 'market', 'post_only'].map((type) => (
+            {['limit', 'market'].map((type) => (
               <button
                 key={type}
                 onClick={() => {
