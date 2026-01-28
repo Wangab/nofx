@@ -351,6 +351,7 @@ func (t *FuturesTrader) OpenLongLimit(symbol string, quantity float64, leverage 
 		Type(futures.OrderTypeLimit).
 		Quantity(quantityStr).
 		NewClientOrderID(getBrOrderID()).
+		TimeInForce(futures.TimeInForceTypeGTC).
 		Price(priceStr).
 		Do(context.Background())
 	if err != nil {
@@ -461,6 +462,7 @@ func (t *FuturesTrader) OpenShortLimit(symbol string, quantity float64, leverage
 		Quantity(quantityStr).
 		Price(priceStr).
 		NewClientOrderID(getBrOrderID()).
+		TimeInForce(futures.TimeInForceTypeGTC).
 		Do(context.Background())
 
 	if err != nil {
