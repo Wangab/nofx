@@ -96,7 +96,7 @@ MANIFEST
 venv/
 ENV/
 env/
-.env/
+.env.example/
 
 # uv
 .uv/

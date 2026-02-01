@@ -29,6 +29,7 @@ type Config struct {
 	DBPassword string // PostgreSQL password
 	DBName     string // PostgreSQL database name
 	DBSSLMode  string // PostgreSQL SSL mode
+	Schema     string // PostgreSQL Schema
 
 	// Security configuration
 	// TransportEncryption enables browser-side encryption for API keys
@@ -130,6 +131,9 @@ func Init() {
 	}
 	if v := os.Getenv("DB_SSLMODE"); v != "" {
 		cfg.DBSSLMode = v
+	}
+	if v := os.Getenv("DB_SCHEMA"); v != "" {
+		cfg.Schema = v
 	}
 
 	global = cfg

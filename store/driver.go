@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
-	_ "github.com/lib/pq"      // PostgreSQL driver
-	_ "modernc.org/sqlite"     // SQLite driver
+	_ "github.com/lib/pq"  // PostgreSQL driver
+	_ "modernc.org/sqlite" // SQLite driver
 )
 
 // DBType represents database type
@@ -29,6 +29,7 @@ type DBConfig struct {
 	Password string // PostgreSQL password (for postgres)
 	DBName   string // PostgreSQL database name (for postgres)
 	SSLMode  string // PostgreSQL SSL mode (for postgres)
+	Schema   string // PostgreSQL Schema (for postgres)
 }
 
 // DBDriver database driver abstraction
@@ -83,6 +84,7 @@ func NewDBDriverFromEnv() (*DBDriver, error) {
 			Password: os.Getenv("DB_PASSWORD"),
 			DBName:   getEnv("DB_NAME", "nofx"),
 			SSLMode:  getEnv("DB_SSLMODE", "disable"),
+			Schema:   getEnv("DB_SCHEMA", "public"),
 		})
 
 	default:
@@ -209,8 +211,8 @@ func openSQLite(path string) (*sql.DB, error) {
 // openPostgres opens PostgreSQL database
 func openPostgres(cfg DBConfig) (*sql.DB, error) {
 	connStr := fmt.Sprintf(
-		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
-		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DBName, cfg.SSLMode,
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s schema=%s",
+		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DBName, cfg.SSLMode, cfg.Schema,
 	)
 
 	db, err := sql.Open("postgres", connStr)
