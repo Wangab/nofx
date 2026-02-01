@@ -1725,7 +1725,7 @@ func extractDecisions(response string) ([]Decision, error) {
 		logger.Infof("✓ Extracted JSON using <decision> tag")
 	} else {
 		jsonPart = s
-		logger.Infof("⚠️  <decision> tag not found, searching JSON in full text")
+		logger.Infof("⚠️  <decision> tag not found, searching JSON in full text %s", jsonPart)
 	}
 
 	jsonPart = fixMissingQuotes(jsonPart)
